@@ -87,7 +87,7 @@ For more options, see [🛠️ Addarr Refresh Installation](#️-addarr-refresh-
 
 ---
 
-[Features](#-features) | [System Requirements](#-system-requirements) | [Installation](#-installation) | [Usage](#-usage) | [Configuration](#-configuration) | [Contributing](#-contributing)
+[Features](#-features) | [System Requirements](#-system-requirements) | [Installation](#️-addarr-refresh-installation) | [Usage](#-usage) | [Configuration](#basic-configuration) | [Contributing](#-contributing)
 
 </div>
 
