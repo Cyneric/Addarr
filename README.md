@@ -153,9 +153,6 @@ For more options, see [🛠️ Installation](#️-installation)
   - [📄 License](#-license)
   - [Author](#author)
   - [🙏 Acknowledgments](#-acknowledgments)
-- [](#)
-- [](#-1)
-- [](#-2)
 
 ## ✨ Features
 
@@ -776,9 +773,7 @@ This project is a modernized fork of [Addarr](https://github.com/Waterboy1602/Ad
 [🔗 Sonarr](https://sonarr.tv/)
 [🔗 Lidarr](https://lidarr.audio/)
 
-#
-#
-#
+---
 
 <div align="center">
 Made with ❤️
