@@ -1,4 +1,8 @@
-#Template - Copy this file to create new translations
+# File: addarr.template.yml
+# Author: Christian Blank (https://github.com/cyneric)
+# Created Date: 2024-11-08
+# Description: Template for Addarr translations - Copy this file to create new translations.
+
 template:
   # Basic terms
   Start: Start
