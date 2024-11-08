@@ -1,0 +1,174 @@
+#Italiano - Italia
+it-it:
+  # Basic terms
+  Start: Inizia
+  Stop: Ferma
+  Cancel: Annulla
+  Back: Indietro
+  Language: Lingua
+  Settings: Impostazioni
+  Status: Stato
+  HelpButton: Aiuto
+  
+  # Media types
+  Movie: Film
+  MovieWithArticle: Il film
+  Series: Serie
+  SeriesWithArticle: La serie
+  Album: Album
+  AlbumWithArticle: L'album
+  Artist: Artista
+  ArtistWithArticle: L'artista
+  Music: Musica
+  MusicWithArticle: La musica
+  
+  # Actions
+  Add: Aggiungi
+  Delete: Elimina
+  Monitor: Monitora
+  Search: Cerca
+  Select: Seleziona
+  Confirm: Conferma
+  
+  # Navigation
+  Next: Successivo
+  Previous: Precedente
+  
+  # Common messages
+  Start chatting: "🤖 Inizia a chattare con Addarr su Telegram. La prima volta che usi \"start\" dovrai inserire la password."
+  End: "🏁 Il processo è terminato."
+  Title: "🔍 Inserisci il termine di ricerca:"
+  What is this?: "❓ Cosa stai cercando?"
+  NotAuthorized: "🔒 Devi prima autenticarti.\nUsa /start per iniziare l'autenticazione."
+  mainMenu: "🏠 Menu principale - Scegli un'azione."
+  Canceled: "🚫 Operazione annullata. Scrivi /start per vedere il menu principale"
+
+  messages:
+    CancelHint: "(Usa /cancel per annullare)"
+    Add: "✅ Sì, aggiungi questo %{subject}"
+    This: "❓ Vuoi aggiungere questo %{subjectWithArticle}?"
+    ThisDelete: "❓ Vuoi eliminare questo %{subjectWithArticle}?"
+    AddFailed: "❌ Oops, non sono riuscito ad aggiungere %{subjectWithArticle}. Riprova."
+    DeleteFailed: "❌ Oops, non è riuscito a eliminare %{subjectWithArticle}. Riprova."
+    AddSuccess: "✅ %{subjectWithArticle} è stato aggiunto con successo 🙂"
+    DeleteSuccess: "✅ %{subjectWithArticle} è stato rimosso con successo 🙂"
+    Exist: "ℹ️ %{subjectWithArticle} esiste già 😉"
+    NoExist: "❌ %{subjectWithArticle} non esiste"
+    DeletePrompt: "🗑️ Seleziona cosa vuoi eliminare"
+  
+  # Search results
+  searchresults:
+    zero: "❌ Nessun risultato trovato"
+    one: "✅ Un risultato trovato"
+    other: "✅ %{count} risultati trovati"
+  
+  # Season selection
+  Season: Stagione
+  MonitorAll: "👁️ Monitora tutto"
+  AllSeasons: "📺 Tutte le stagioni"
+  FutureSeasons: "🔄 Stagioni future"
+  FutureEpisodes: "⏩ Episodi futuri"
+  SelectSeasons: "📺 Seleziona le stagioni da scaricare"
+  ConfirmSelection: "✅ Conferma selezione"
+  
+  # Quality selection
+  SelectQuality: "🎯 Seleziona il profilo di qualità"
+  
+  # Authentication
+  Authorize: "🔐 Devi prima autenticare questa chat. Qual è la password?"
+  Wrong password: "❌ Password errata. Riprova..."
+  Chatid added: "✅ Questa chat è stata aggiunta alla lista delle chat autorizzate. Ora puoi utilizzare il bot."
+  NotAdmin: "⛔ Devi essere un amministratore per eseguire questo comando."
+  Chatid already allowed: "ℹ️ Questa chat è già autorizzata."
+  
+  # Transmission
+  Transmission:
+    NotEnabled: "❌ La funzione Transmission non è attivata."
+    Speed: "⚡ Che velocità vuoi impostare per Transmission?"
+    TSL: "🐌 Limiti di velocità temporanei"
+    Normal: "🚀 Velocità normale"
+    ChangedToTSL: "✅ Limiti di velocità temporanei attivati."
+    ChangedToNormal: "✅ Limiti di velocità temporanei disattivati."
+    Error: "❌ Errore nell'impostazione della velocità"
+  
+  # SABnzbd
+  Sabnzbd:
+    NotEnabled: "❌ La funzione SABnzbd non è attivata."
+    Speed: "⚡ Che velocità vuoi impostare per SABnzbd?"
+    Limit25: "🐌 25%"
+    Limit50: "⚡ 50%"
+    Limit100: "🚀 Nessun limite"
+    ChangedTo50: "✅ Limite impostato al 50%"
+    ChangedTo25: "✅ Limite impostato al 25%"
+    ChangedTo100: "✅ Nessun limite di velocità"
+    Error: "❌ Si è verificato un errore durante l'impostazione della velocità"
+  
+  # Help text
+  HelpText: "❓ Vuoi rivedere questo testo? Usa /%{help}.
+
+    🚀 Comandi base:
+    • Per autenticarti prima del primo utilizzo usa /%{authenticate}
+    • Per aggiungere contenuti usa /%{add}
+    • Per eliminare contenuti usa /%{delete}
+    • Per aggiungere direttamente un film o una serie usa /%{movie}, /%{serie} o /%{music}
+
+    📊 Comandi di stato:
+    • Per vedere quali serie sono in Sonarr usa /%{allSeries}
+    • Per vedere quali film sono in Radarr usa /%{allMovies}
+    • Per vedere quali artisti sono in Lidarr usa /%{allMusic}
+
+    ⚙️ Comandi di sistema:
+    • Per modificare la velocità di Transmission usa /%{transmission}
+    • Per modificare la velocità di SABnzbd usa /%{sabnzbd}
+
+    🛠️ Comandi amministratore:
+    • python run.py --setup - Esegui la configurazione iniziale
+    • python run.py --configure - Aggiungi/modifica servizi
+    • python run.py --check - Mostra stato configurazione
+    • python run.py --validate-i18n - Valida file di traduzione
+    • python run.py --backup - Crea backup configurazione
+    • python run.py --reset - Ripristina configurazione predefinita
+    • python run.py --help - Mostra tutti i comandi"
+  
+  # Error messages
+  Error:
+    NotFound: "❌ Non trovato"
+    ConnectionFailed: "❌ Connessione fallita"
+    InvalidResponse: "❌ Risposta non valida dal server"
+    Unauthorized: "❌ Accesso non autorizzato"
+    ServerError: "❌ Errore del server"
+    InvalidConfig: "❌ Configurazione non valida"
+    MissingDependency: "❌ Dipendenza mancante"
+    ValidationFailed: "❌ Validazione fallita"
+    NetworkError: "❌ Errore di rete"
+    TimeoutError: "❌ Timeout della richiesta"
+    APIError: "❌ Errore API"
+    DatabaseError: "❌ Errore del database"
+    FileNotFound: "❌ File non trovato"
+    PermissionDenied: "❌ Permesso negato"
+  
+  # System status messages
+  SystemStatus:
+    Online: "✅ Online"
+    Offline: "❌ Offline"
+    Connecting: "🔄 Connessione in corso..."
+    Syncing: "🔄 Sincronizzazione..."
+    Ready: "✅ Pronto"
+    Error: "❌ Errore"
+    Warning: "⚠️ Attenzione"
+    Info: "ℹ️ Info"
+  
+  # Configuration messages
+  Missing config: "⚠️ Mancano le seguenti chiavi nel file config.yaml: %{missingKeys}.
+    \nAggiungile prima di riavviare il bot."
+  Wrong values: "⚠️ Le seguenti chiavi hanno un valore errato nel file config.yaml: %{wrongValues}.
+    \nCorreggi i valori prima di riavviare il bot."
+  
+  # Notifications
+  Notifications:
+    Stop: "🛑 L'utente %{first_name} con chat_id %{chat_id} ha interrotto il processo."
+    Start: "🚀 L'utente %{first_name} con chat_id %{chat_id} ha avviato una nuova richiesta."
+    AddSuccess: "✅ %{subjectWithArticle} %{title} dell'utente %{first_name} con chat_id %{chat_id} è stato aggiunto."
+    AddFailed: "❌ Errore nell'aggiunta di %{subjectWithArticle} %{title} dell'utente %{first_name} con chat_id %{chat_id}."
+    Exist: "ℹ️ %{subjectWithArticle} %{title} che l'utente %{first_name} con chat_id %{chat_id} voleva aggiungere esiste già."
+    Delete: "🗑️ L'utente %{first_name} con chat_id %{chat_id} ha avviato una nuova eliminazione."

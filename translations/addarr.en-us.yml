@@ -1,0 +1,174 @@
+#English - United States
+en-us:
+  # Basic terms
+  Start: Start
+  Stop: Stop
+  Cancel: Cancel
+  Back: Back
+  Language: Language
+  Settings: Settings
+  Status: Status
+  HelpButton: Help
+  
+  # Media types
+  Movie: Movie
+  MovieWithArticle: The movie
+  Series: Series
+  SeriesWithArticle: The series
+  Album: Album
+  AlbumWithArticle: The Album
+  Artist: Artist
+  ArtistWithArticle: The Artist
+  Music: Music
+  MusicWithArticle: The Music
+  
+  # Actions
+  Add: Add
+  Delete: Delete
+  Monitor: Monitor
+  Search: Search
+  Select: Select
+  Confirm: Confirm
+  
+  # Navigation
+  Next: Next
+  Previous: Previous
+  
+  # Common messages
+  Start chatting: "🤖 Start chatting with Addarr in Telegram. The first time you use \"start\" you will be asked to enter your password."
+  End: "🏁 The process has ended."
+  Title: "🔍 Enter a search term:"
+  What is this?: "❓ What are you looking for?"
+  NotAuthorized: "🔒 You need to authenticate first.\nUse /start to begin authentication."
+  mainMenu: "🏠 Main Menu - Choose an action."
+  Canceled: "🚫 Operation canceled. Type /start to see the main menu"
+  
+  messages:
+    CancelHint: "(Use /cancel to cancel)"
+    Add: "✅ Yes, add this %{subject}"
+    This: "❓ Is this %{subjectWithArticle} you want to add?"
+    ThisDelete: "❓ Is this %{subjectWithArticle} you want to delete?"
+    AddFailed: "❌ Oops, failed to add %{subjectWithArticle}. Maybe give it another try."
+    DeleteFailed: "❌ Oops, failed to delete %{subjectWithArticle}. Maybe give it another try."
+    AddSuccess: "✅ %{subjectWithArticle} is added successfully 🙂"
+    DeleteSuccess: "✅ %{subjectWithArticle} is deleted successfully 🙂"
+    Exist: "ℹ️ %{subjectWithArticle} already exists 😉"
+    NoExist: "❌ %{subjectWithArticle} does not exist"
+    DeletePrompt: "🗑️ Select what you want to delete"
+  
+  # Search results
+  searchresults:
+    zero: "❌ No results found"
+    one: "✅ One search result"
+    other: "✅ %{count} search results"
+  
+  # Season selection
+  Season: Season
+  MonitorAll: "👁️ Monitor All"
+  AllSeasons: "📺 All Seasons"
+  FutureSeasons: "🔄 Future Seasons"
+  FutureEpisodes: "⏩ Future Episodes"
+  SelectSeasons: "📺 Select seasons to download"
+  ConfirmSelection: "✅ Confirm Selection"
+  
+  # Quality selection
+  SelectQuality: "🎯 Select quality profile"
+  
+  # Authentication
+  Authorize: "🔐 You first need to authorize this chat. What is the password?"
+  Wrong password: "❌ You entered the wrong password. Try again..."
+  Chatid added: "✅ This chat is successfully added to the list of allowed chats. Now you can start using this bot."
+  NotAdmin: "⛔ You need to be an admin to execute this command."
+  Chatid already allowed: "ℹ️ This chat is already authorized."
+  
+  # Transmission
+  Transmission:
+    NotEnabled: "❌ The Transmission function is not activated."
+    Speed: "⚡ Which speed do you want Transmission to use?"
+    TSL: "🐌 Temporary Speed Limits"
+    Normal: "🚀 Normal speed"
+    ChangedToTSL: "✅ Temporary Speed Limits is enabled."
+    ChangedToNormal: "✅ Temporary Speed Limits is disabled."
+    Error: "❌ Error setting speed limit"
+  
+  # SABnzbd
+  Sabnzbd:
+    NotEnabled: "❌ The SABnzbd function is not activated."
+    Speed: "⚡ Which speed do you want SABnzbd to use?"
+    Limit25: "🐌 25%"
+    Limit50: "⚡ 50%"
+    Limit100: "🚀 No limit"
+    ChangedTo50: "✅ Limit set to 50%"
+    ChangedTo25: "✅ Limit set to 25%"
+    ChangedTo100: "✅ No speed limit"
+    Error: "❌ Something went wrong while trying to set the speed"
+  
+  # Help text
+  HelpText: "❓ Want to see this text again? Use /%{help}.
+
+    🚀 Basic Commands:
+    • To authenticate before first use you should use /%{authenticate}
+    • To add media use /%{add}
+    • To delete media use /%{delete}
+    • To immediately add media you can use /%{movie}, /%{serie} or /%{music}
+
+    📊 Status Commands:
+    • To check which series are in Sonarr use /%{allSeries}
+    • To check which movies are in Radarr use /%{allMovies}
+    • To check which artists are in Lidarr use /%{allMusic}
+
+    ⚙️ System Commands:
+    • To toggle Transmission speed use /%{transmission}
+    • To change SABnzbd speed use /%{sabnzbd}
+
+    🛠️ Admin Commands:
+    • python run.py --setup - Run initial setup wizard
+    • python run.py --configure - Add/modify services
+    • python run.py --check - Show configuration status
+    • python run.py --validate-translations - Validate translation files
+    • python run.py --backup - Create configuration backup
+    • python run.py --reset - Reset configuration to default
+    • python run.py --help - Show all commands"
+  
+  # Configuration messages
+  Missing config: "⚠️ You are missing the following configkeys in your config.yaml-file: %{missingKeys}.
+    \nAdd these before restarting the bot."
+  Wrong values: "⚠️ The following configkeys has a wrong value in your config.yaml-file: %{wrongValues}.
+    \nChange these before restarting the bot."
+  
+  # Error messages
+  Error:
+    NotFound: "❌ Not found"
+    ConnectionFailed: "❌ Connection failed"
+    InvalidResponse: "❌ Invalid response from server"
+    Unauthorized: "❌ Unauthorized access"
+    ServerError: "❌ Server error"
+    InvalidConfig: "❌ Invalid configuration"
+    MissingDependency: "❌ Missing dependency"
+    ValidationFailed: "❌ Validation failed"
+    NetworkError: "❌ Network error"
+    TimeoutError: "❌ Request timed out"
+    APIError: "❌ API error"
+    DatabaseError: "❌ Database error"
+    FileNotFound: "❌ File not found"
+    PermissionDenied: "❌ Permission denied"
+  
+  # System status messages
+  SystemStatus:
+    Online: "✅ Online"
+    Offline: "❌ Offline"
+    Connecting: "🔄 Connecting..."
+    Syncing: "🔄 Syncing..."
+    Ready: "✅ Ready"
+    Error: "❌ Error"
+    Warning: "⚠️ Warning"
+    Info: "ℹ️ Info"
+  
+  # Notifications
+  Notifications:
+    Stop: "🛑 User %{first_name} with chat_id %{chat_id} has stopped the process."
+    Start: "🚀 The user %{first_name} with chat_id %{chat_id} has started a new request."
+    AddSuccess: "✅ The %{subjectWithArticle} %{title} of user %{first_name} with chat_id %{chat_id} has been added."
+    AddFailed: "❌ Error when adding the %{subjectWithArticle} %{title} of the user %{first_name} with chat_id %{chat_id}."
+    Exist: "ℹ️ The %{subjectWithArticle} %{title} that the user %{first_name} with chat_id %{chat_id} wanted to add already exists."
+    Delete: "🗑️ The user %{first_name} with chat_id %{chat_id} has initiated a new deletion."

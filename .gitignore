@@ -1,0 +1,14 @@
+#IGNORE
+.vscode/
+__pycache__/
+
+*.code-workspace
+*.log
+config.yaml
+logs/
+env/
+venv/
+.idea/
+config.yaml_
+.venv/
+backup/

@@ -1,0 +1,52 @@
+addarr/
+├── src/                    # Source code directory
+│   ├── api/               # API clients
+│   │   ├── __init__.py
+│   │   ├── base.py       # Base API client
+│   │   ├── radarr.py     # Radarr API client
+│   │   ├── sonarr.py     # Sonarr API client
+│   │   ├── lidarr.py     # Lidarr API client
+│   │   ├── transmission.py # Transmission API client
+│   │   └── sabnzbd.py    # SABnzbd API client
+│   ├── bot/              # Telegram bot components
+│   │   ├── __init__.py
+│   │   ├── handlers/     # Command handlers
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py   # Authentication handler
+│   │   │   ├── media.py  # Media management handler
+│   │   │   ├── start.py  # Start/menu handler
+│   │   │   ├── help.py   # Help handler
+│   │   │   ├── sabnzbd.py # SABnzbd handler
+│   │   │   └── transmission.py # Transmission handler
+│   │   └── keyboards.py  # Keyboard layouts
+│   ├── config/           # Configuration management
+│   │   ├── __init__.py
+│   │   └── settings.py   # Configuration handling
+│   ├── services/         # Business logic services
+│   │   ├── __init__.py
+│   │   ├── media.py      # Media service
+│   │   ├── translation.py # Translation service
+│   │   ├── transmission.py # Transmission service
+│   │   └── sabnzbd.py    # SABnzbd service
+│   ├── utils/            # Utility functions
+│   │   ├── __init__.py
+│   │   ├── logger.py     # Logging setup
+│   │   └── validate_translations.py # Translation validation
+│   ├── __init__.py
+│   └── main.py          # Application entry point
+├── translations/         # Translation files
+│   ├── addarr.template.yml # Translation template
+│   ├── addarr.en-us.yml
+│   ├── addarr.de-de.yml
+│   ├── addarr.es-es.yml
+│   ├── addarr.fr-fr.yml
+│   ├── addarr.it-it.yml
+│   ├── addarr.nl-be.yml
+│   ├── addarr.pl-pl.yml
+│   └── addarr.pt-pt.yml
+├── config.yaml          # User configuration
+├── config_example.yaml  # Example configuration
+├── run.py              # Application launcher
+├── requirements.txt    # Python dependencies
+├── Dockerfile         # Docker build file
+└── docker-compose.yml # Docker compose config

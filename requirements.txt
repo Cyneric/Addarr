@@ -1,0 +1,30 @@
+# Core dependencies
+python-telegram-bot>=20.0.0
+pyyaml>=6.0.1
+requests>=2.31.0
+python-i18n>=0.3.9
+colorama>=0.4.6
+
+# Async support
+aiohttp>=3.8.5
+aiocron>=1.8
+asyncio>=3.4.3
+
+# Data handling
+dataclasses>=0.6
+typing-extensions>=4.7.1
+cachetools>=5.3.1
+
+# Interactive CLI
+questionary>=2.0.1
+prompt_toolkit>=3.0.0  # Required by questionary
+wcwidth>=0.2.5        # Required by questionary
+
+# Language selection
+readchar>=4.0.0
+
+# YAML handling
+ruamel.yaml>=0.17.22
+
+# Transmission RPC
+transmission-rpc>=3.0.0

@@ -1,0 +1,10 @@
+apiVersion: v2
+appVersion: latest
+description: A helm chart for Addarr Refresh
+name: addarr
+type: application
+version: 0.1.0
+home: https://github.com/cyneric/addarr
+maintainers:
+  - name: cyneric
+    url: https://github.com/cyneric

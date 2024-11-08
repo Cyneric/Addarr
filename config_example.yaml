@@ -1,0 +1,156 @@
+# Addarr Refresh Configuration Example
+# ---------------------------
+
+# Media Services Configuration (at least one must be enabled)
+# --------------------------------------------------------
+
+# Radarr Configuration (Movies)
+radarr:
+  enable: false  # Set to true to enable Radarr
+  server:
+    addr: localhost
+    port: 7878
+    path: /
+    ssl: false
+  auth:
+    apikey:  # Your Radarr API key (required if enabled)
+    username:  # Optional: Basic auth username
+    password:  # Optional: Basic auth password
+  features:
+    search: true  # Enable automatic searching when adding media
+    minimumAvailability: announced  # Options: announced, inCinemas, released, preDB
+  paths:
+    excludedRootFolders: []
+    narrowRootFolderNames: true
+  quality:
+    excludedProfiles: []
+  tags:
+    default: ["telegram"]
+    addRequesterIdTag: true
+  adminRestrictions: false
+
+# Sonarr Configuration (TV Shows)
+sonarr:
+  enable: false  # Set to true to enable Sonarr
+  server:
+    addr: localhost
+    port: 8989
+    path: /
+    ssl: false
+  auth:
+    apikey:  # Your Sonarr API key (required if enabled)
+    username:  # Optional: Basic auth username
+    password:  # Optional: Basic auth password
+  features:
+    search: true  # Enable automatic searching when adding media
+    seasonFolder: true  # Organize episodes in season folders
+  paths:
+    excludedRootFolders: []
+    narrowRootFolderNames: true
+  quality:
+    excludedProfiles: []
+  tags:
+    default: ["telegram"]
+    addRequesterIdTag: true
+  adminRestrictions: false
+
+# Lidarr Configuration (Music)
+lidarr:
+  enable: false  # Set to true to enable Lidarr
+  server:
+    addr: localhost
+    port: 8686
+    path: /
+    ssl: false
+  auth:
+    apikey:  # Your Lidarr API key (required if enabled)
+    username:  # Optional: Basic auth username
+    password:  # Optional: Basic auth password
+  features:
+    search: true  # Enable automatic searching when adding media
+    albumFolder: true  # Organize tracks in album folders
+    monitorOption: all  # Options: all, future, missing, none
+  paths:
+    excludedRootFolders: []
+    narrowRootFolderNames: true
+  quality:
+    excludedProfiles: []
+  tags:
+    default: ["telegram"]
+    addRequesterIdTag: true
+  adminRestrictions: false
+  metadataProfileId: 1
+
+# Download Clients Configuration (Optional)
+# ---------------------------------------
+
+# Transmission Configuration (Optional)
+transmission:
+  enable: false  # Set to true to enable Transmission
+  onlyAdmin: true  # Restrict to admin users only
+  host: localhost
+  authentication: false
+  username:  # Required if authentication is true
+  password:  # Required if authentication is true
+
+# SABnzbd Configuration (Optional)
+sabnzbd:
+  enable: false  # Set to true to enable SABnzbd
+  onlyAdmin: true  # Restrict to admin users only
+  server:
+    addr: localhost
+    port: 8090
+    path: /
+    ssl: false
+  auth:
+    apikey:  # Your SABnzbd API key (required if enabled)
+    username:  # Optional: Basic auth username
+    password:  # Optional: Basic auth password
+
+# Bot Configuration (Required)
+# --------------------------
+
+# Telegram Configuration
+telegram:
+  token:  # Your bot token from @BotFather (required)
+  password:  # Password for chat authentication (required)
+
+# Command Entrypoints
+entrypoints:
+  auth: auth
+  help: help
+  add: start
+  allSeries: allSeries
+  allMovies: allMovies
+  allMusic: allMusic
+  transmission: transmission
+  sabnzbd: sabnzbd
+
+# Security Configuration
+security:
+  enableAdmin: false  # Enable admin features
+  enableAllowlist: false  # Enable allowlist restriction
+
+# Localization
+language: en-us  # Available: de-de, en-us, es-es, fr-fr, it-it, nl-be, pl-pl, pt-pt, ru-ru
+
+# Logging Configuration
+logging:
+  toConsole: true  # Enable console logging
+  debug: false  # Enable debug logging
+  adminNotifyId:  # Telegram chat ID for admin notifications (optional)
+
+# Access Control
+admins: []  # List of admin Telegram user IDs
+allow_list: []  # List of allowed Telegram user IDs (if enableAllowlist is true)
+chat_id: []  # List of allowed Telegram chat IDs
+
+# Example IDs (remove or replace these):
+# admins:
+#   - 123456789  # Admin 1 ID
+#   - 987654321  # Admin 2 ID
+# allow_list:
+#   - 111222333  # User 1 ID
+#   - 444555666  # User 2 ID
+# chat_id:
+#   - -100123456789  # Group 1 ID

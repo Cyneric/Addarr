@@ -1,0 +1,365 @@
+versions:
+  - version: "0.8.11"
+    date: "2024-11-08"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: feature
+        scope: monitoring
+        description: "Added service health monitoring system"
+        details:
+          - "Added periodic health checks for all services"
+          - "Added /status command to check service health"
+          - "Added automatic service recovery detection"
+          - "Added real-time service status monitoring"
+          - "Added detailed service version reporting"
+          - "Added colorized health status output"
+          - "Added service connection validation"
+      - type: improvement
+        scope: system
+        description: "Enhanced system startup and validation"
+        details:
+          - "Added service health checks during startup"
+          - "Improved URL handling for service connections"
+          - "Better handling of SABnzbd API responses"
+          - "Enhanced error messages and logging"
+          - "Added service version detection"
+      - type: bugfix
+        scope: api
+        description: "Fixed various API and connection issues"
+        details:
+          - "Fixed SABnzbd version detection"
+          - "Fixed service URL construction"
+          - "Fixed connection testing during setup"
+          - "Fixed translation service initialization"
+          - "Fixed service status updates"
+    breaking_changes: []
+    deprecated: []
+    migration_notes:
+      - "Health check interval can be configured in the bot initialization"
+      - "Service status can now be monitored via /status command"
+
+  - version: "0.8.10"
+    date: "2024-11-07"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: enhancement
+        scope: i18n
+        description: "Implemented comprehensive translation system"
+        details:
+          - "Added YAML-based translation system"
+          - "Added support for multiple languages (en-us, de-de)"
+          - "Implemented translation service with fallback handling"
+          - "Added translations for all user-facing messages"
+          - "Added support for dynamic message formatting"
+          - "Added subject-specific translations for media types"
+          - "Improved error message translations"
+      - type: improvement
+        scope: ui
+        description: "Enhanced user interface localization"
+        details:
+          - "Updated all button labels to use translations"
+          - "Added translated keyboard layouts"
+          - "Improved message formatting consistency"
+          - "Added support for localized error messages"
+          - "Added language-specific media type handling"
+      - type: enhancement
+        scope: api
+        description: "Improved API response handling"
+        details:
+          - "Added caching for API responses to improve performance"
+          - "Implemented rate limiting for API requests"
+          - "Enhanced error logging for API failures"
+      - type: improvement
+        scope: documentation
+        description: "Updated project documentation"
+        details:
+          - "Added examples for new features in README"
+          - "Improved clarity of setup instructions"
+          - "Updated API documentation to reflect recent changes"
+    breaking_changes: []
+    deprecated: []
+    migration_notes:
+      - "Translation files must be placed in the translations/ directory"
+      - "Language can be configured in config.yaml using the 'language' key"
+
+  - version: "0.8.9"
+    date: "2024-11-07"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: enhancement
+        scope: i18n
+        description: "Implemented comprehensive translation system"
+        details:
+          - "Added YAML-based translation system"
+          - "Added support for multiple languages (en-us, de-de)"
+          - "Implemented translation service with fallback handling"
+          - "Added translations for all user-facing messages"
+          - "Added support for dynamic message formatting"
+          - "Added subject-specific translations for media types"
+          - "Improved error message translations"
+      - type: improvement
+        scope: ui
+        description: "Enhanced user interface localization"
+        details:
+          - "Updated all button labels to use translations"
+          - "Added translated keyboard layouts"
+          - "Improved message formatting consistency"
+          - "Added support for localized error messages"
+          - "Added language-specific media type handling"
+    breaking_changes: []
+    deprecated: []
+    migration_notes:
+      - "Translation files must be placed in the translations/ directory"
+      - "Language can be configured in config.yaml using the 'language' key"
+
+  - version: "0.8.8"
+    date: "2024-11-07"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: enhancement
+        scope: lidarr
+        description: "Added Lidarr music library integration"
+        details:
+          - "Added music search and artist lookup"
+          - "Added quality profile selection for music"
+          - "Added MusicBrainz integration for artist images"
+          - "Added fallback image handling for artists"
+          - "Improved artist metadata display"
+          - "Better error handling for Lidarr API responses"
+      - type: improvement
+        scope: api
+        description: "Enhanced API client functionality"
+        details:
+          - "Added consistent error handling across all API clients"
+          - "Improved API response parsing"
+          - "Better handling of 'already exists' cases"
+          - "Added proper logging for API interactions"
+    breaking_changes: []
+    deprecated: []
+    migration_notes: []
+
+  - version: "0.8.7"
+    date: "2024-11-07"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: enhancement
+        scope: media
+        description: "Improved media search and selection experience"
+        details:
+          - "Added IMDB and Rotten Tomatoes ratings for movies"
+          - "Added TMDB ratings for TV shows"
+          - "Added studio/network information for movies and TV shows"
+          - "Added genre information to media cards"
+          - "Improved season selection UI for TV shows"
+          - "Added 'Monitor All' quick selection option"
+          - "Added 'Future Seasons' and 'Future Episodes' options"
+          - "Fixed quality profile selection handling"
+          - "Improved error messages and feedback"
+      - type: bugfix
+        scope: ui
+        description: "Fixed various UI and interaction issues"
+        details:
+          - "Fixed message editing with photo captions"
+          - "Fixed season selection button states"
+          - "Fixed quality profile selection confirmation"
+          - "Fixed cancel button functionality"
+          - "Improved error handling for API responses"
+    breaking_changes: []
+    deprecated: []
+    migration_notes: []
+
+  - version: "0.8.6"
+    date: "2024-11-07"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: enhancement
+        description: "Improved error handling and user feedback for media operations"
+        details:
+          - "Added proper error messages for 'already exists' cases"
+          - "Improved quality profile selection with inline keyboard buttons"
+          - "Added IMDB and Rotten Tomatoes ratings to movie cards"
+          - "Fixed message editing issues with photo captions"
+          - "Consistent error handling across Radarr, Sonarr, and Lidarr"
+          - "Better logging of API responses and errors"
+      - type: bugfix
+        description: "Fixed various UI and interaction issues"
+        details:
+          - "Fixed message editing errors with photo captions"
+          - "Fixed quality profile selection not showing properly"
+          - "Fixed error messages not being specific enough"
+
+  - version: "0.8.5"
+    date: "2024-11-07"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: feature
+        scope: setup
+        description: "Added interactive setup and configuration system"
+        details:
+          - "Interactive setup wizard for easy configuration"
+          - "Command line options for setup and configuration"
+          - "Service status checking command (--check)"
+          - "Configuration management command (--configure)"
+          - "Service connection validation during setup"
+      - type: improvement
+        scope: system
+        description: "Enhanced logging and error handling"
+        details:
+          - "Separate error.log file for better error tracking"
+          - "Enhanced logging system with colored output and rotating logs"
+          - "Improved conversation handler with proper message tracking"
+          - "Timeout handling for conversations (5 minutes)"
+      - type: improvement
+        scope: configuration
+        description: "Improved service configuration and validation"
+        details:
+          - "Made all services optional with enable flags"
+          - "Require at least one media service (Radarr/Sonarr/Lidarr)"
+          - "Made download clients (SABnzbd/Transmission) optional"
+          - "Updated config.yaml structure with enable flags"
+          - "Enhanced configuration validation and defaults"
+      - type: security
+        scope: authentication
+        description: "Enhanced security measures"
+        details:
+          - "Better access control through config.yaml"
+          - "Improved chat and user ID validation"
+          - "Enhanced API key handling and validation"
+          - "SSL verification handling for services"
+          - "Better password input handling"
+      - type: bugfix
+        scope: application
+        description: "Various bug fixes and stability improvements"
+        details:
+          - "Service initialization errors with better fallbacks"
+          - "Configuration validation and missing fields handling"
+          - "Telegram conversation handler warnings"
+          - "Message tracking issues in group chats"
+          - "State management in multi-user scenarios"
+    breaking_changes:
+      - "Configuration file structure has been updated with new enable flags"
+      - "Service initialization process has changed"
+      - "At least one media service is now required"
+    deprecated:
+      - "Old configuration format without enable flags"
+      - "Previous service initialization method"
+    migration_notes:
+      - "Update config.yaml to include new enable flags for services"
+      - "Review service configuration to ensure at least one media service is enabled"
+      - "Check log file configuration for new rotating logs setup"
+
+  - version: "0.8.4"
+    date: "2024-11-07"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: bugfix
+        scope: application
+        description: "Fixed event loop handling issues"
+        details:
+          - "Resolved 'Cannot close a running event loop' error"
+          - "Improved compatibility with environments where an event loop is already running"
+      - type: improvement
+        scope: logging
+        description: "Improved logging configuration"
+        details:
+          - "Configured basic logging to avoid file access issues"
+          - "Ensured logging works correctly across different environments"
+      - type: refactor
+        scope: main
+        description: "Simplified main application entry point"
+        details:
+          - "Separated bot logic into a dedicated run_bot function"
+          - "Handled event loop checks to ensure compatibility"
+    breaking_changes: []
+    deprecated: []
+    migration_notes:
+      - "Ensure no other processes are accessing the log file to avoid PermissionError"
+      - "Review logging configuration if custom settings are needed"
+
+  - version: "0.8.3"
+    date: "2024-02-06"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: bugfix
+        scope: application
+        description: "Fixed event loop and async issues"
+        details:
+          - "Fixed event loop handling in main application"
+          - "Added proper signal handling for graceful shutdown"
+          - "Fixed async job scheduling"
+          - "Improved error handling in async operations"
+          - "Added platform-specific event loop handling"
+          - "Fixed conversation handler warnings"
+      - type: improvement
+        scope: documentation
+        description: "Improved code documentation"
+        details:
+          - "Added docstrings to all modules"
+          - "Added type hints throughout the codebase"
+          - "Added module-level documentation"
+          - "Improved inline comments"
+          - "Updated README with new structure"
+          - "Added contributor guidelines"
+    breaking_changes:
+      - "Configuration file structure has been updated"
+      - "API client initialization has changed"
+      - "Handler initialization requires new dependencies"
+      - "Changed import paths for all modules"
+      - "Event loop handling has changed"
+      - "Service initialization process has changed"
+      - "Conversation handler settings have changed"
+    deprecated:
+      - "Old configuration format"
+      - "Direct API calls without service layer"
+      - "Global state variables"
+      - "Synchronous API calls"
+      - "Old logging system"
+      - "Old conversation handler settings"
+    migration_notes:
+      - "Update config.yaml to match new structure in config_example.yaml"
+      - "Ensure all required dependencies are installed"
+      - "Create required directories (logs, etc.)"
+      - "Update any custom scripts to use new import paths"
+      - "Use async/await with all API calls"
+      - "Review platform-specific considerations for Windows/Unix"
+      - "Update conversation handler settings to use per_message=False"
+
+  - version: "0.8.2"
+    date: "2024-01-15"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: feature
+        scope: ui
+        description: "Added visual improvements"
+        details:
+          - "Movie poster preview in search results"
+          - "Colored console output with emojis"
+      - type: feature
+        scope: system
+        description: "Added core system features"
+        details:
+          - "Support for multiple languages through YAML files"
+          - "Singleton pattern for services to prevent duplicate initialization"
+          - "Root folder and quality profile selection"
+          - "Support for Radarr, Sonarr, and Lidarr APIs"
+          - "Docker support with docker-compose"
+      - type: improvement
+        scope: documentation
+        description: "Enhanced documentation"
+        details:
+          - "Detailed project documentation"
+          - "Contributors section in README"
+          - "Development setup instructions"
+          - "Project architecture overview"
+      - type: security
+        scope: authentication
+        description: "Security improvements"
+        details:
+          - "Added authentication checks for all commands"
+          - "Proper API key handling"
+          - "Chat ID validation"
+          - "Secure configuration handling"
+          - "Docker security best practices"
+    breaking_changes: []
+    deprecated: []
+    migration_notes: [] 

@@ -1,0 +1,174 @@
+#Nederlands - België
+nl-be:
+  # Basic terms
+  Start: Start
+  Stop: Stop
+  Cancel: Annuleren
+  Back: Terug
+  Language: Taal
+  Settings: Instellingen
+  Status: Status
+  HelpButton: Help
+  
+  # Media types
+  Movie: Film
+  MovieWithArticle: De film
+  Series: Serie
+  SeriesWithArticle: De serie
+  Album: Album
+  AlbumWithArticle: Het album
+  Artist: Artiest
+  ArtistWithArticle: De artiest
+  Music: Muziek
+  MusicWithArticle: De muziek
+  
+  # Actions
+  Add: Toevoegen
+  Delete: Verwijderen
+  Monitor: Monitoren
+  Search: Zoeken
+  Select: Selecteren
+  Confirm: Bevestigen
+  
+  # Navigation
+  Next: Volgende
+  Previous: Vorige
+  
+  # Common messages
+  Start chatting: "🤖 Je kan nu chatten met Addarr op Telegram. De eerste keer dat je \"start\" gebruikt, zul je je wachtwoord moeten ingeven."
+  End: "🏁 Het proces is beëindigd."
+  Title: "🔍 Geef de zoekterm:"
+  What is this?: "❓ Wat zoek je?"
+  NotAuthorized: "🔒 Je moet eerst inloggen.\nGebruik /start om te beginnen met authenticatie."
+  mainMenu: "🏠 Hoofdmenu - Kies een actie."
+  Canceled: "🚫 Operatie geannuleerd. Typ /start om het hoofdmenu te bekijken"
+
+  messages:
+    CancelHint: "(Gebruik /cancel om te annuleren)"
+    Add: "✅ Ja, voeg deze %{subject} toe"
+    This: "❓ Is dit %{subjectWithArticle} die je wilt toevoegen?"
+    ThisDelete: "❓ Is dit %{subjectWithArticle} die je wilt verwijderen?"
+    AddFailed: "❌ Oeps, mislukt om %{subjectWithArticle} toe te voegen. Probeer misschien nog eens."
+    DeleteFailed: "❌ Oeps, %{subjectWithArticle} verwijderen mislukt. Probeer misschien nog eens."
+    AddSuccess: "✅ %{subjectWithArticle} is succesvol toegevoegd 🙂"
+    DeleteSuccess: "✅ %{subjectWithArticle} is succesvol verwijderd 🙂"
+    Exist: "ℹ️ %{subjectWithArticle} bestaat al 😉"
+    NoExist: "❌ %{subjectWithArticle} bestaat niet"
+    DeletePrompt: "🗑️ Selecteer wat je wilt verwijderen"
+  
+  # Search results
+  searchresults:
+    zero: "❌ Geen resultaten gevonden"
+    one: "✅ Eén zoekresultaat"
+    other: "✅ %{count} zoekresultaten"
+  
+  # Season selection
+  Season: Seizoen
+  MonitorAll: "👁️ Alles monitoren"
+  AllSeasons: "📺 Alle seizoenen"
+  FutureSeasons: "🔄 Toekomstige seizoenen"
+  FutureEpisodes: "⏩ Toekomstige afleveringen"
+  SelectSeasons: "📺 Selecteer seizoenen om te downloaden"
+  ConfirmSelection: "✅ Bevestig selectie"
+  
+  # Quality selection
+  SelectQuality: "🎯 Selecteer kwaliteitsprofiel"
+  
+  # Authentication
+  Authorize: "🔐 Je moet eerst deze chat toestemming geven. Wat is het wachtwoord?"
+  Wrong password: "❌ Het wachtwoord is verkeerd. Probeer opnieuw..."
+  Chatid added: "✅ Deze chat is succesvol toegevoegd aan de lijst met toegestane chats. Nu kan je deze bot gebruiken."
+  NotAdmin: "⛔ Je moet administrator zijn vooraleer je dit commando kunt uitvoeren."
+  Chatid already allowed: "ℹ️ Deze chat heeft al toestemming."
+  
+  # Transmission
+  Transmission:
+    NotEnabled: "❌ De Transmission functie is niet geactiveerd."
+    Speed: "⚡ Welke snelheid wil je dat Transmission gebruikt?"
+    TSL: "🐌 Tijdelijke snelheidslimiet"
+    Normal: "🚀 Normale snelheid"
+    ChangedToTSL: "✅ Tijdelijke snelheidslimiet staat aan."
+    ChangedToNormal: "✅ Tijdelijke snelheidslimiet staat uit."
+    Error: "❌ Fout bij het instellen van de snelheid"
+  
+  # SABnzbd
+  Sabnzbd:
+    NotEnabled: "❌ De SABnzbd functie is niet geactiveerd."
+    Speed: "⚡ Welke snelheid wil je dat SABnzbd gebruikt?"
+    Limit25: "🐌 25%"
+    Limit50: "⚡ 50%"
+    Limit100: "🚀 Geen limiet"
+    ChangedTo50: "✅ Limiet staat op 50%"
+    ChangedTo25: "✅ Limiet staat op 25%"
+    ChangedTo100: "✅ Geen snelheidslimiet"
+    Error: "❌ Er ging iets fout tijdens het aanpassen van de snelheid"
+  
+  # Help text
+  HelpText: "❓ Wil je deze tekst nog eens zien? Gebruik dan /%{help}.
+
+    🚀 Basis-commando's:
+    • Om de eerste keer te authenticeren gebruik je /%{authenticate}
+    • Om een film of serie toe te voegen kun je /%{add} gebruiken
+    • Om een serie of film te verwijderen gebruik je /%{delete}
+    • Om meteen een film of serie toe te voegen gebruik je /%{movie}, /%{serie} of /%{music}
+
+    📊 Status-commando's:
+    • Om te kijken welke series al in Sonarr zitten gebruik je /%{allSeries}
+    • Om te kijken welke films al in Radarr zitten gebruik je /%{allMovies}
+    • Om te kijken welke artiesten in Lidarr zitten gebruik je /%{allMusic}
+
+    ⚙️ Systeem-commando's:
+    • Om de snelheidslimiet van Transmission te wijzigen gebruik je /%{transmission}
+    • Om de snelheidslimiet van SABnzbd te wijzigen gebruik je /%{sabnzbd}
+
+    🛠️ Admin-commando's:
+    • python run.py --setup - Start configuratie wizard
+    • python run.py --configure - Diensten toevoegen/wijzigen
+    • python run.py --check - Toon configuratie status
+    • python run.py --validate-i18n - Valideer vertaalbestanden
+    • python run.py --backup - Maak backup van configuratie
+    • python run.py --reset - Reset configuratie naar standaard
+    • python run.py --help - Toon alle commando's"
+  
+  # Error messages
+  Error:
+    NotFound: "❌ Niet gevonden"
+    ConnectionFailed: "❌ Verbinding mislukt"
+    InvalidResponse: "❌ Ongeldig antwoord van server"
+    Unauthorized: "❌ Niet geautoriseerde toegang"
+    ServerError: "❌ Serverfout"
+    InvalidConfig: "❌ Ongeldige configuratie"
+    MissingDependency: "❌ Ontbrekende afhankelijkheid"
+    ValidationFailed: "❌ Validatie mislukt"
+    NetworkError: "❌ Netwerkfout"
+    TimeoutError: "❌ Time-out"
+    APIError: "❌ API-fout"
+    DatabaseError: "❌ Databasefout"
+    FileNotFound: "❌ Bestand niet gevonden"
+    PermissionDenied: "❌ Toegang geweigerd"
+  
+  # System status messages
+  SystemStatus:
+    Online: "✅ Online"
+    Offline: "❌ Offline"
+    Connecting: "🔄 Verbinden..."
+    Syncing: "🔄 Synchroniseren..."
+    Ready: "✅ Klaar"
+    Error: "❌ Fout"
+    Warning: "⚠️ Waarschuwing"
+    Info: "ℹ️ Info"
+  
+  # Configuration messages
+  Missing config: "⚠️ Je mist de volgende instellingen in je config.yaml-bestand: %{missingKeys}.
+    \nVoeg deze eerst toe vooraleer de bot te herstarten."
+  Wrong values: "⚠️ De volgende instellingen hebben een verkeerde waarde in je config.yaml-bestand: %{wrongValues}.
+    \nVerander deze eerst vooraleer de bot te herstarten."
+  
+  # Notifications
+  Notifications:
+    Stop: "🛑 Gebruiker %{first_name} met chat_id %{chat_id} heeft het proces gestopt."
+    Start: "🚀 Gebruiker %{first_name} met chat_id %{chat_id} heeft een nieuw verzoek gestart."
+    AddSuccess: "✅ %{subjectWithArticle} %{title} van gebruiker %{first_name} met chat_id %{chat_id} is toegevoegd."
+    AddFailed: "❌ Fout bij het toevoegen van %{subjectWithArticle} %{title} van gebruiker %{first_name} met chat_id %{chat_id}."
+    Exist: "ℹ️ %{subjectWithArticle} %{title} dat gebruiker %{first_name} met chat_id %{chat_id} wilde toevoegen bestaat al."
+    Delete: "🗑️ Gebruiker %{first_name} met chat_id %{chat_id} heeft een nieuwe verwijdering gestart."
