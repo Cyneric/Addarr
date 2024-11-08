@@ -16,8 +16,6 @@ def init_utils():
     from .error_handler import (
         AddarrError,
         ConfigError,
-        APIError,
-        AuthenticationError,
         ValidationError,
         handle_token_error,
         handle_missing_token_error,
@@ -30,8 +28,6 @@ def init_utils():
     return {
         'AddarrError': AddarrError,
         'ConfigError': ConfigError,
-        'APIError': APIError,
-        'AuthenticationError': AuthenticationError,
         'ValidationError': ValidationError,
         'handle_token_error': handle_token_error,
         'handle_missing_token_error': handle_missing_token_error,

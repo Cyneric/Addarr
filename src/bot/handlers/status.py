@@ -71,3 +71,7 @@ class StatusHandler:
             await update.message.reply_text(
                 "❌ Error getting system status. Please try again later."
             ) 
+
+    # This method is defined but never implemented
+    async def refresh_status(self, query):
+        pass

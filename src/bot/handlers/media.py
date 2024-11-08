@@ -16,7 +16,6 @@ from telegram.ext import (
     filters,
     ContextTypes
 )
-from colorama import Fore
 
 from src.bot.keyboards import get_system_keyboard
 from src.utils.logger import get_logger, log_user_interaction

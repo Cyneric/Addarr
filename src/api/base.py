@@ -121,11 +121,6 @@ class BaseApiClient(ABC):
         """Search for media"""
         pass
         
-    @abstractmethod
-    def add_to_library(self, item_id, path, quality_profile_id, tags):
-        """Add item to library"""
-        pass
-
     async def check_status(self) -> bool:
         """Check if the service is available"""
         try:

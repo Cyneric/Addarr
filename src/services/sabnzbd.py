@@ -10,7 +10,7 @@ This module handles interactions with the SABnzbd API.
 import aiohttp
 from typing import Dict, Any
 from src.utils.logger import get_logger
-from src.definitions import load_config
+from src.config.settings import config
 
 logger = get_logger("addarr.services.sabnzbd")
 
@@ -18,7 +18,7 @@ class SABnzbdService:
     """Service for handling SABnzbd operations"""
     
     def __init__(self):
-        self.config = load_config()
+        self.config = config
         if not self.config.get('sabnzbd', {}).get('enable', False):
             raise ValueError("SABnzbd is not enabled")
             

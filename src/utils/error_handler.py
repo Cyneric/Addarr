@@ -26,14 +26,6 @@ class ConfigError(AddarrError):
     """Configuration related errors"""
     pass
 
-class APIError(AddarrError):
-    """API related errors"""
-    pass
-
-class AuthenticationError(AddarrError):
-    """Authentication related errors"""
-    pass
-
 class ValidationError(AddarrError):
     """Data validation errors"""
     pass

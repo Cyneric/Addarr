@@ -72,50 +72,6 @@ def get_system_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(keyboard)
 
-def get_media_results_keyboard(results: List[Dict], show_next: bool = True) -> InlineKeyboardMarkup:
-    """Get keyboard for media search results"""
-    translation = TranslationService()
-    keyboard = [
-        [InlineKeyboardButton(result["title"], callback_data=f"select_{result['id']}")]
-        for result in results
-    ]
-    
-    nav_buttons = []
-    if show_next:
-        nav_buttons.append(
-            InlineKeyboardButton(
-                f"➡️ {translation.get_text('Next result')}", 
-                callback_data="nav_next"
-            )
-        )
-    
-    if nav_buttons:
-        keyboard.append(nav_buttons)
-        
-    keyboard.append([
-        InlineKeyboardButton(
-            f"❌ {translation.get_text('Stop')}", 
-            callback_data="select_cancel"
-        )
-    ])
-    
-    return InlineKeyboardMarkup(keyboard)
-
-def get_delete_keyboard(items: List[Dict]) -> InlineKeyboardMarkup:
-    """Get keyboard for delete selection"""
-    translation = TranslationService()
-    keyboard = [
-        [InlineKeyboardButton(item["title"], callback_data=f"delete_{item['id']}")]
-        for item in items
-    ]
-    keyboard.append([
-        InlineKeyboardButton(
-            f"❌ {translation.get_text('StopDelete')}", 
-            callback_data="delete_cancel"
-        )
-    ])
-    return InlineKeyboardMarkup(keyboard)
-
 def get_settings_keyboard() -> InlineKeyboardMarkup:
     """Get settings menu keyboard"""
     translation = TranslationService()
