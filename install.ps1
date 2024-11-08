@@ -24,7 +24,7 @@ Write-Host @"
 "@ -ForegroundColor $colors.Blue
 
 # Check for required commands
-function Check-Command {
+function Test-Command {
     param($Command)
     
     if (!(Get-Command $Command -ErrorAction SilentlyContinue)) {
@@ -42,8 +42,8 @@ if (-not $isAdmin) {
 }
 
 # Check requirements
-Check-Command "python"
-Check-Command "git"
+Test-Command "python"
+Test-Command "git"
 
 # Create installation directory
 $INSTALL_DIR = "$env:LOCALAPPDATA\Addarr"
