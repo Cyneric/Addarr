@@ -1,3 +1,8 @@
+# filename: docker-compose.yml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Docker compose file for Addarr Refresh Telegram Bot.
+
 version: '3'
 services:
   addarr:

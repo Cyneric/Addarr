@@ -1,3 +1,8 @@
+# filename: Dockerfile
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Dockerfile for Addarr Refresh Telegram Bot.
+
 FROM python:3.11.5-alpine3.18
 
 WORKDIR /app
