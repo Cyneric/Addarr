@@ -1,3 +1,8 @@
+# filename: .flake8
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Flake8 configuration for Addarr Refresh Telegram Bot.
+
 [flake8]
 ignore = E203, E501, W503
 exclude = .git,__pycache__,docs,build,dist,logs
