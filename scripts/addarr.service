@@ -1,0 +1,41 @@
+# File: addarr.service
+# Author: Christian Blank (https://github.com/Cyneric)
+# Created Date: 2024-11-08
+# Description: This file defines the systemd service for the Addarr Media Management Bot.
+# It specifies how the service should be started, stopped, and managed by the systemd system.
+# The service runs under a specified user and includes security hardening measures to protect the system.
+# Logs are directed to specific files for monitoring and troubleshooting purposes.
+
+
+[Unit]
+Description=Addarr Media Management Bot
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+WorkingDirectory=%h/.addarr
+ExecStart=%h/.local/bin/addarr
+Restart=always
+RestartSec=10
+StandardOutput=append:%h/.addarr/logs/service.log
+StandardError=append:%h/.addarr/logs/service.error.log
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+
+[Install]
+WantedBy=default.target 
