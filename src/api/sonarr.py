@@ -1,5 +1,8 @@
 """
-Sonarr API client module.
+Filename: sonarr.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Sonarr API client module.
 """
 
 import aiohttp

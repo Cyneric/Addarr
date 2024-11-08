@@ -1,3 +1,10 @@
+"""
+Filename: notification.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Notification data model.
+"""
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional

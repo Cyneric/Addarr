@@ -1,5 +1,8 @@
 """
-Notification service module.
+Filename: notification.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Notification service module.
 
 This module handles sending notifications to users and admins.
 """

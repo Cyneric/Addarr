@@ -1,5 +1,8 @@
 """
-SABnzbd API client module.
+Filename: sabnzbd.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: SABnzbd API client module.
 """
 
 import aiohttp

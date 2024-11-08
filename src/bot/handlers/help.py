@@ -1,5 +1,8 @@
 """
-Help handler module.
+Filename: help.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Help handler module.
 
 This module provides help and command information to users.
 """

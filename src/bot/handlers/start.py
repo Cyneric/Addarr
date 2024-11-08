@@ -1,5 +1,8 @@
 """
-Start handler module.
+Filename: start.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Start handler module.
 
 This module handles the main entry point and menu for the bot.
 """

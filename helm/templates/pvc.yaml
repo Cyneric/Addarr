@@ -1,3 +1,5 @@
+# PersistentVolumeClaim for the application
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

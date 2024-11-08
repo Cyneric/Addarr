@@ -1,5 +1,8 @@
 """
-API client package for external services.
+Filename: __init__.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: API client package for external services.
 
 This package contains API client implementations for Radarr, Sonarr,
 and Lidarr services. It provides a consistent interface for interacting

@@ -1,5 +1,8 @@
 """
-Status command handler module.
+Filename: status.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Status command handler module.
 
 This module handles the /status command, showing system and service health information.
 """

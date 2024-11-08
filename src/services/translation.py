@@ -1,5 +1,8 @@
 """
-Translation service module.
+Filename: translation.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Translation service module.
 
 This module handles loading and managing translations for the bot.
 """

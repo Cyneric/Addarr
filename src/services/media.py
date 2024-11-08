@@ -1,5 +1,8 @@
 """
-Media service module.
+Filename: media.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Media service module.
 
 This module handles interactions with media services (Radarr, Sonarr, Lidarr).
 """

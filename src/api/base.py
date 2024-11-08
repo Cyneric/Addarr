@@ -1,5 +1,8 @@
 """
-Base API client implementation.
+Filename: base.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Base API client implementation.
 
 This module provides the base class for all API clients, implementing
 common functionality like request handling, authentication, and error

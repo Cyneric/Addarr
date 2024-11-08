@@ -1,5 +1,8 @@
 """
-Media handler module.
+Filename: media.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Media handler module.
 
 This module handles media-related commands (movies, TV shows, music).
 """

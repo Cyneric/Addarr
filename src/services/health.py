@@ -1,5 +1,8 @@
 """
-Health monitoring service module.
+Filename: health.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Health monitoring service module.
 
 This module provides centralized health monitoring functionality for all services.
 Includes both one-time checks and periodic monitoring.

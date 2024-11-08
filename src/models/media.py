@@ -1,5 +1,8 @@
 """
-Media data models module.
+Filename: media.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Media data models module.
 
 This module defines the data structures for different types of media
 (movies, series, artists) and their related components (quality profiles,

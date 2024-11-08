@@ -1,5 +1,8 @@
 """
-Job scheduler service module.
+Filename: scheduler.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Job scheduler service module.
 
 This module provides a cron-based job scheduling system for running
 periodic tasks. It manages job lifecycles and provides error handling

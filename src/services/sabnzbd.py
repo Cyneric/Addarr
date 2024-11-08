@@ -1,5 +1,8 @@
 """
-SABnzbd service module.
+Filename: sabnzbd.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: SABnzbd service module.
 
 This module handles interactions with the SABnzbd API.
 """

@@ -1,5 +1,8 @@
 """
-Cache service module.
+Filename: cache.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Cache service module.
 
 This module provides a simple in-memory caching system with expiration.
 It helps improve performance by caching frequently accessed data and

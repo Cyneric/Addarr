@@ -3,7 +3,7 @@
 Filename: run.py
 Author: Christian Blank
 Created Date: 2024-11-08
-Description: Main entry point for Addarr.
+Description: Main entry point for Addarr Refresh Telegram Bot.
 """
 
 import sys

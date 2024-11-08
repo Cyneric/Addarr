@@ -1,5 +1,8 @@
 """
-Conversation states for the bot handlers
+Filename: states.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Conversation states for the bot handlers
 """
 
 class States:

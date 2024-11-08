@@ -1,5 +1,8 @@
 """
-Keyboard layouts module.
+Filename: keyboards.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Keyboard layouts module.
 
 This module provides centralized keyboard layouts for the bot.
 """

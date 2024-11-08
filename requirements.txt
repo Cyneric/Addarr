@@ -1,3 +1,8 @@
+# filename: requirements.txt
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Python requirements for Addarr Refresh Telegram Bot.
+
 # Core dependencies
 python-telegram-bot>=20.0.0
 pyyaml>=6.0.1

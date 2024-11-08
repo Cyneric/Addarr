@@ -1,5 +1,8 @@
 """
-Radarr API client module.
+Filename: radarr.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Radarr API client module.
 """
 
 import aiohttp

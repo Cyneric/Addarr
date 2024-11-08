@@ -1,3 +1,4 @@
+# Addarr Refresh Helm chart values
 # Required: Set your Storage Class below for dynamic provisioning of PVC for storing chatids
 
 storageClassName: ""

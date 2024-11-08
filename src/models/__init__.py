@@ -1,5 +1,8 @@
 """
-Data models package.
+Filename: __init__.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Data models package.
 
 This package contains all the data models used throughout the application,
 including models for media items (movies, series, artists) and notifications.

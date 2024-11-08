@@ -1,5 +1,8 @@
 """
-System command handler module.
+Filename: system.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: System command handler module.
 """
 
 from telegram import Update

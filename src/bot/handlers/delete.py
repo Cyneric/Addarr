@@ -1,5 +1,8 @@
 """
-Delete handler module.
+Filename: delete.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Delete handler module.
 
 This module handles media deletion operations.
 """

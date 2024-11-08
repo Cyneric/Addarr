@@ -1,5 +1,8 @@
 """
-Services package initialization.
+Filename: __init__.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Services package initialization.
 """
 
 from .media import MediaService

@@ -1,5 +1,8 @@
 """
-Telegram bot command handlers package.
+Filename: handlers.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Telegram bot command handlers package.
 
 This package contains all the command handlers for the Telegram bot,
 including authentication, media management, deletion, and system commands.

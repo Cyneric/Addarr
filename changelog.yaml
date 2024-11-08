@@ -1,4 +1,41 @@
 versions:
+  - version: "0.8.12"
+    date: "2024-11-09"
+    author: "Christian Blank (https://github.com/Cyneric)"
+    changes:
+      - type: feature
+        scope: installation
+        description: "Added automated installation scripts"
+        details:
+          - "Added Windows PowerShell installer script"
+          - "Added Linux/macOS bash installer script"
+          - "Added service installation options for both platforms"
+          - "Added automatic startup configuration"
+          - "Added system service management"
+          - "Added backup of existing installations"
+          - "Added PATH configuration for easy access"
+      - type: feature
+        scope: system
+        description: "Added silent mode operation"
+        details:
+          - "Added --silent command line flag"
+          - "Implemented console output suppression"
+          - "Maintained file logging in silent mode"
+          - "Added silent mode to service installations"
+      - type: improvement
+        scope: documentation
+        description: "Enhanced installation documentation"
+        details:
+          - "Added detailed installation instructions"
+          - "Added service management documentation"
+          - "Updated README with quick install commands"
+          - "Added platform-specific installation guides"
+    breaking_changes: []
+    deprecated: []
+    migration_notes:
+      - "Previous manual installations can be replaced using the new installers"
+      - "Existing services may need to be recreated using the new service installers"
+
   - version: "0.8.11"
     date: "2024-11-08"
     author: "Christian Blank (https://github.com/Cyneric)"

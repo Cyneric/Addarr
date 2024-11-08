@@ -1,5 +1,8 @@
 """
-Transmission service module.
+Filename: transmission.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Transmission service module.
 
 This module provides functionality to control Transmission's download speeds
 through its command-line interface. It handles speed limit toggling and

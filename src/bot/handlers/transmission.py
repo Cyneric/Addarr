@@ -1,5 +1,8 @@
 """
-Transmission handler module.
+Filename: transmission.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Transmission handler module.
 """
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup

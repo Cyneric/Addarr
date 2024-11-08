@@ -1,5 +1,8 @@
 """
-Maintenance jobs module.
+Filename: maintenance.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Maintenance jobs module.
 
 This module defines scheduled maintenance tasks that run periodically,
 such as cleaning up the cache and checking service health. These jobs

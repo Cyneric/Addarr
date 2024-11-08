@@ -1,5 +1,8 @@
 """
-Authentication handler module.
+Filename: auth.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Authentication handler module.
 
 This module handles user authentication through the bot.
 """
