@@ -70,8 +70,9 @@ Whether you're managing movies, TV shows, or music, Addarr Refresh makes it simp
 </div>
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/77ac5e02-8dd5-4f81-873c-188ae83073b2" alt="Addarr Refresh Logo">
+  <img src="https://github.com/user-attachments/assets/db261a61-d49c-45f7-b103-d39d3b3a17ef" alt="Addarr Refresh Splash">
 </div>
+
 
 ## 📋 Table of Contents
 
