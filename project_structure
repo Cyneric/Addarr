@@ -20,11 +20,20 @@ addarr/
 │   │   │   ├── status.py # Status and health monitoring
 │   │   │   ├── sabnzbd.py # SABnzbd handler
 │   │   │   └── transmission.py # Transmission handler
-│   │   └── keyboards.py  # Keyboard layouts and button definitions
+│   │   ├── keyboards/    # Keyboard layouts
+│   │   │   ├── __init__.py
+│   │   │   ├── media.py  # Media-related keyboards
+│   │   │   ├── settings.py # Settings keyboards
+│   │   │   └── common.py # Common keyboard layouts
+│   │   └── conversations/ # Conversation handlers
+│   │       ├── __init__.py
+│   │       ├── auth.py   # Authentication flow
+│   │       └── media.py  # Media addition flow
 │   │
 │   ├── config/           # Configuration management
 │   │   ├── __init__.py
-│   │   └── settings.py   # Configuration handling and validation
+│   │   ├── settings.py   # Configuration handling and validation
+│   │   └── defaults.py   # Default configuration values
 │   │
 │   ├── services/         # Business logic services
 │   │   ├── __init__.py
@@ -33,6 +42,7 @@ addarr/
 │   │   ├── cache.py      # Caching service
 │   │   ├── scheduler.py  # Job scheduling service
 │   │   ├── translation.py # Translation service
+│   │   ├── notification.py # Notification service
 │   │   ├── transmission.py # Transmission service
 │   │   └── sabnzbd.py    # SABnzbd service
 │   │
@@ -42,15 +52,33 @@ addarr/
 │   │   ├── splash.py     # CLI splash screen and version info
 │   │   ├── validation.py # Input validation helpers
 │   │   ├── error_handler.py # Centralized error handling
+│   │   ├── backup.py     # Configuration backup utilities
+│   │   ├── chat.py       # Chat helper functions
+│   │   ├── config_handler.py # Configuration file handling
+│   │   ├── helpers.py    # General helper functions
+│   │   ├── prerun.py     # Pre-run checks
 │   │   └── validate_translations.py # Translation validation
 │   │
 │   ├── jobs/             # Scheduled jobs and tasks
 │   │   ├── __init__.py
+│   │   ├── health.py     # Health check job
 │   │   └── maintenance.py # Maintenance tasks
+│   │
+│   ├── models/           # Data models and types
+│   │   ├── __init__.py
+│   │   ├── config.py     # Configuration models
+│   │   ├── media.py      # Media-related models
+│   │   └── notification.py # Notification models
 │   │
 │   ├── __init__.py
 │   ├── definitions.py    # Global constants and paths
 │   └── main.py          # Application entry point
+│
+├── scripts/             # Installation and utility scripts
+│   ├── install.sh      # Linux/macOS installer
+│   ├── install.ps1     # Windows installer
+│   ├── addarr.service  # Linux systemd service file
+│   └── addarr.service.ps1 # Windows service configuration
 │
 ├── translations/         # Translation files
 │   ├── addarr.template.yml # Translation template
@@ -73,16 +101,17 @@ addarr/
 │       ├── configmap.yaml
 │       └── pvc.yaml
 │
-├── scripts/            # Utility scripts
-│   ├── install.sh     # Linux/macOS installer
-│   └── install.ps1    # Windows installer
-│
-├── tests/             # Test suite
+├── tests/              # Test suite
 │   ├── __init__.py
-│   ├── conftest.py    # Test configuration
-│   ├── test_api/      # API tests
-│   ├── test_services/ # Service tests
-│   └── test_utils/    # Utility tests
+│   ├── conftest.py     # Test configuration
+│   ├── test_api/       # API tests
+│   ├── test_services/  # Service tests
+│   └── test_utils/     # Utility tests
+│
+├── docs/               # Documentation
+│   ├── api/           # API documentation
+│   ├── deployment/    # Deployment guides
+│   └── development/   # Development guides
 │
 ├── config.yaml          # User configuration
 ├── config_example.yaml  # Example configuration

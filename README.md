@@ -72,14 +72,14 @@ Whether you're managing movies, TV shows, or music, Addarr Refresh makes it simp
 Open a terminal and run:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/cyneric/addarr/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/cyneric/addarr/main/scripts/install.sh | bash
 ```
 
 #### Windows
 Open PowerShell as Administrator and run:
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/cyneric/addarr/main/install.ps1'))
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/cyneric/addarr/main/scripts/install.ps1'))
 ```
 
 For more options, see [🛠️ Addarr Refresh Installation](#️-addarr-refresh-installation)
@@ -236,7 +236,7 @@ pip3 --version
 #### macOS
 1. Install Homebrew if not already installed:
    ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/scripts/install.sh)"
    ```
 2. Install Python:
    ```bash
@@ -259,12 +259,12 @@ Install Addarr with a single command
 
 Using curl:
 ```bash
-curl -sSL https://raw.githubusercontent.com/cyneric/addarr/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/cyneric/addarr/main/scripts/install.sh | bash
 ```
 
 or Using wget:
 ```bash
-wget -qO- https://raw.githubusercontent.com/cyneric/addarr/main/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/cyneric/addarr/main/scripts/install.sh | bash
 ```
 
 The linux/macOS installer will:
@@ -282,7 +282,7 @@ After installation:
 
 Using PowerShell:
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/cyneric/addarr/main/install.ps1'))
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/cyneric/addarr/main/scripts/install.ps1'))
 ```
 
 The windows installer will:
