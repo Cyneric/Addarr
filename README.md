@@ -82,12 +82,12 @@ Open PowerShell as Administrator and run:
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/cyneric/addarr/main/scripts/install.ps1'))
 ```
 
-For more options, see [🛠️ Addarr Refresh Installation](#️-addarr-refresh-installation)
+For more options, see [🛠️ Installation](#️-installation)
 
 
 ---
 
-[Features](#-features) | [System Requirements](#-system-requirements) | [Installation](#️-addarr-refresh-installation) | [Usage](#-usage) | [Configuration](#basic-configuration) | [Contributing](#-contributing)
+[Features](#-features) | [System Requirements](#-system-requirements) | [Installation](#️-installation) | [Usage](#-usage) | [Configuration](#basic-configuration) | [Contributing](#-contributing)
 
 </div>
 
@@ -111,7 +111,7 @@ For more options, see [🛠️ Addarr Refresh Installation](#️-addarr-refresh-
       - [Windows](#windows-1)
       - [Linux (Debian/Ubuntu)](#linux-debianubuntu)
       - [macOS](#macos)
-  - [🛠️ Addarr Refresh Installation](#️-addarr-refresh-installation)
+  - [🛠️ Installation](#️-installation)
     - [Option 1: Install Script (easy)](#option-1-install-script-easy)
       - [Linux/macOS](#linuxmacos-1)
       - [Windows](#windows-2)
@@ -248,7 +248,7 @@ pip3 --version
    pip3 --version
    ```
 
-## 🛠️ Addarr Refresh Installation
+## 🛠️ Installation
 
 ### Option 1: Install Script (easy)
 *(Linux/macOS/Windows)*
