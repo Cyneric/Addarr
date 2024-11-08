@@ -99,24 +99,27 @@ For more options, see [🛠️ Addarr Refresh Installation](#️-addarr-refresh-
 ## 📋 Table of Contents
 
 - [🚀 Addarr Refresh](#-addarr-refresh)
-      - [Install Addarr with a single command](#install-addarr-with-a-single-command)
+  - [🚀 Quick Install](#-quick-install)
+      - [Linux/macOS](#linuxmacos)
+      - [Windows](#windows)
   - [📋 Table of Contents](#-table-of-contents)
   - [✨ Features](#-features)
   - [💻 System Requirements](#-system-requirements)
     - [Supported Operating Systems](#supported-operating-systems)
     - [Prerequisites](#prerequisites)
     - [Python Installation](#python-installation)
-      - [Windows](#windows)
+      - [Windows](#windows-1)
       - [Linux (Debian/Ubuntu)](#linux-debianubuntu)
       - [macOS](#macos)
   - [🛠️ Addarr Refresh Installation](#️-addarr-refresh-installation)
-    - [Option 1: Quick Start \& Interactive Setup (Recommended for Windows)](#option-1-quick-start--interactive-setup-recommended-for-windows)
-    - [Option 2: Install Script (Linux/macOS)](#option-2-install-script-linuxmacos)
-    - [Option 3: Manual Configuration](#option-3-manual-configuration)
-    - [Option 4: Docker Installation](#option-4-docker-installation)
-      - [Using Docker Compose (Recommended)](#using-docker-compose-recommended)
-      - [Using Docker manually](#using-docker-manually)
-      - [Environment Variables](#environment-variables)
+    - [Option 1: Install Script (easy)](#option-1-install-script-easy)
+      - [Linux/macOS](#linuxmacos-1)
+      - [Windows](#windows-2)
+    - [Option 2: Git Clone (advanced)](#option-2-git-clone-advanced)
+    - [Option 3: Manual installation from zip file (advanced)](#option-3-manual-installation-from-zip-file-advanced)
+    - [Option 4: Docker Installation (advanced)](#option-4-docker-installation-advanced)
+      - [Using Docker Compose](#using-docker-compose)
+      - [Using Docker standalone](#using-docker-standalone)
   - [🎮 Usage](#-usage)
     - [Available Commands](#available-commands)
     - [Authentication](#authentication)
@@ -134,6 +137,15 @@ For more options, see [🛠️ Addarr Refresh Installation](#️-addarr-refresh-
     - [Configuration](#configuration)
     - [Status Command](#status-command)
     - [Automatic Recovery](#automatic-recovery)
+  - [🌐 Internationalization](#-internationalization)
+    - [Supported Languages](#supported-languages)
+    - [Adding Translations](#adding-translations)
+  - [🔧 Service Management](#-service-management)
+    - [Windows Service](#windows-service)
+    - [Linux Systemd Service](#linux-systemd-service)
+  - [☁️ Deployment Options](#️-deployment-options)
+    - [Docker Deployment](#docker-deployment)
+    - [Kubernetes Deployment](#kubernetes-deployment)
   - [👨‍💻 Development](#-development)
     - [Project Structure](#project-structure)
     - [Development Setup](#development-setup)
@@ -547,6 +559,112 @@ The system will:
 - Notify when services recover
 - Provide detailed error information
 - Track service uptime and status history
+
+## 🌐 Internationalization
+
+Addarr Refresh supports multiple languages:
+
+### Supported Languages
+- **English** (en-us)
+- **German** (de-de)
+- **Spanish** (es-es)
+- **French** (fr-fr)
+- **Italian** (it-it)
+- **Dutch** (nl-be)
+- **Polish** (pl-pl)
+- **Portuguese** (pt-pt)
+
+### Adding Translations
+If you want to add a new language, follow these steps:
+1. Create a new translation file in the `translations` directory
+2. Add the new language code to the `language` field in `config.yaml`
+3. Translate the messages in the new file
+4. Run `python run.py --validate-i18n` to validate the translations
+
+## 🔧 Service Management
+
+Addarr Refresh can be run as a Windows service or a Linux Systemd service:
+
+### Windows Service
+1. Open PowerShell as Administrator
+2. Navigate to the scripts directory:
+   ```powershell
+   cd C:\Users\<username>\AppData\Local\Addarr\scripts
+   ```
+3. Run the service installation script:
+   ```powershell
+   .\addarr.service.ps1
+   ```
+4. Manage the service:
+   ```powershell
+   Start-Service AddarrBot
+   Stop-Service AddarrBot
+   Restart-Service AddarrBot
+   Get-Service AddarrBot
+   ```
+
+### Linux Systemd Service
+1. Create the user service directory:
+   ```bash
+   mkdir -p ~/.config/systemd/user/
+   ```
+2. Copy the service file:
+   ```bash
+   cp ~/.addarr/scripts/addarr.service ~/.config/systemd/user/
+   ```
+3. Reload systemd:
+   ```bash
+   systemctl --user daemon-reload
+   ```
+4. Enable and start the service:
+   ```bash
+   systemctl --user enable addarr
+   systemctl --user start addarr
+   ```
+5. Enable user service persistence:
+   ```bash
+   loginctl enable-linger $USER
+   ```
+6. Manage the service:
+   ```bash
+   systemctl --user status addarr
+   systemctl --user start addarr
+   systemctl --user stop addarr
+   systemctl --user restart addarr
+   ```
+
+## ☁️ Deployment Options
+
+Addarr Refresh can be deployed using Docker or Kubernetes:
+
+### Docker Deployment
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Cyneric/Addarr.git
+   cd addarr
+   ```
+
+2. **Configure the bot**
+   ```bash
+   cp config_example.yaml config.yaml
+   # Edit config.yaml with your settings
+   ```
+
+3. **Start with Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
+
+### Kubernetes Deployment
+1. **Create a Kubernetes deployment**
+   ```bash
+   kubectl apply -f kubernetes/deployment.yaml
+   ```
+
+2. **Create a Kubernetes service**
+   ```bash
+   kubectl apply -f kubernetes/service.yaml
+   ```
 
 ## 👨‍💻 Development
 
