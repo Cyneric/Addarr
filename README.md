@@ -69,6 +69,8 @@ Whether you're managing movies, TV shows, or music, Addarr Refresh makes it simp
 ## 🚀 Quick Install
 
 #### Linux/macOS
+Open a terminal and run:
+
 ```bash
 wget -qO- https://raw.githubusercontent.com/cyneric/addarr/main/install.sh | bash
 ```
