@@ -1,6 +1,7 @@
 # Filename: install.ps1
 # Author: Christian Blank (https://github.com/cyneric)
 # Created Date: 2024-11-08
+# Description: PowerShell installer script for Addarr, a Media Management Telegram Bot.
 # License: MIT
 
 # Installer script for Windows
@@ -97,14 +98,74 @@ if ($userPath -notlike "*$env:LOCALAPPDATA\Microsoft\WindowsApps*") {
     )
 }
 
+# Ask about Windows service installation
+Write-Host "`nWould you like to install Addarr as a Windows service? [y/N]" -ForegroundColor $colors.Yellow
+$installService = Read-Host
+if ($installService -eq 'y' -or $installService -eq 'Y') {
+    # Create service wrapper script
+    $serviceWrapper = "$INSTALL_DIR\service-wrapper.ps1"
+@"
+`$env:PATH = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+Set-Location "$INSTALL_DIR"
+& "$INSTALL_DIR\venv\Scripts\activate.ps1"
+python "$INSTALL_DIR\run.py"
+"@ | Out-File -FilePath $serviceWrapper -Encoding UTF8
+
+    # Create service using NSSM (Non-Sucking Service Manager)
+    Write-Host "`nDownloading NSSM (Service Manager)..." -ForegroundColor $colors.Blue
+    $nssmUrl = "https://nssm.cc/release/nssm-2.24.zip"
+    $nssmZip = "$env:TEMP\nssm.zip"
+    $nssmPath = "$INSTALL_DIR\tools"
+    
+    # Download and extract NSSM
+    Invoke-WebRequest -Uri $nssmUrl -OutFile $nssmZip
+    Expand-Archive -Path $nssmZip -DestinationPath $nssmPath -Force
+    Copy-Item "$nssmPath\nssm-2.24\win64\nssm.exe" "$nssmPath\nssm.exe"
+    Remove-Item -Path $nssmZip
+    Remove-Item -Path "$nssmPath\nssm-2.24" -Recurse
+
+    # Install the service
+    $nssm = "$nssmPath\nssm.exe"
+    & $nssm install Addarr "powershell.exe" "-ExecutionPolicy Bypass -NoProfile -File `"$serviceWrapper`""
+    & $nssm set Addarr DisplayName "Addarr Media Bot"
+    & $nssm set Addarr Description "Telegram bot for media management through Radarr, Sonarr, and Lidarr"
+    & $nssm set Addarr ObjectName LocalSystem
+    & $nssm set Addarr Start SERVICE_AUTO_START
+    
+    # Ask about starting at boot
+    Write-Host "`nWould you like Addarr to start automatically at boot? [y/N]" -ForegroundColor $colors.Yellow
+    $startBoot = Read-Host
+    if ($startBoot -eq 'y' -or $startBoot -eq 'Y') {
+        & $nssm set Addarr Start SERVICE_AUTO_START
+        Write-Host "✓ Addarr will start automatically at boot" -ForegroundColor $colors.Green
+    } else {
+        & $nssm set Addarr Start SERVICE_DEMAND_START
+    }
+
+    # Ask about starting now
+    Write-Host "`nWould you like to start Addarr now? [y/N]" -ForegroundColor $colors.Yellow
+    $startNow = Read-Host
+    if ($startNow -eq 'y' -or $startNow -eq 'Y') {
+        Start-Service Addarr
+        Write-Host "✓ Addarr service started" -ForegroundColor $colors.Green
+        Write-Host "`nYou can manage the service with:" -ForegroundColor $colors.Blue
+        Write-Host "Start-Service Addarr"
+        Write-Host "Stop-Service Addarr"
+        Write-Host "Restart-Service Addarr"
+        Write-Host "Get-Service Addarr"
+    }
+}
+
 Write-Host "`nInstallation complete!" -ForegroundColor $colors.Green
 Write-Host "`nTo get started:" -ForegroundColor $colors.Yellow
 Write-Host "1. Run initial setup:" -NoNewline
 Write-Host " addarr --setup" -ForegroundColor $colors.Blue
-Write-Host "2. Start the bot:" -NoNewline
-Write-Host " addarr" -ForegroundColor $colors.Blue
+if ($installService -ne 'y' -and $installService -ne 'Y') {
+    Write-Host "2. Start the bot:" -NoNewline
+    Write-Host " addarr" -ForegroundColor $colors.Blue
+}
 Write-Host "`nFor more information, visit: " -NoNewline
 Write-Host "https://github.com/cyneric/addarr/wiki" -ForegroundColor $colors.Blue
 
 # Refresh environment variables in current session
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") 
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
