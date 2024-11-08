@@ -65,6 +65,26 @@ Whether you're managing movies, TV shows, or music, Addarr Refresh makes it simp
 
 ---
 
+
+## 🚀 Quick Install
+
+#### Linux/macOS
+```bash
+wget -qO- https://raw.githubusercontent.com/cyneric/addarr/main/install.sh | bash
+```
+
+#### Windows
+Open PowerShell as Administrator and run:
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/cyneric/addarr/main/install.ps1'))
+```
+
+For more options, see [🛠️ Addarr Refresh Installation](#️-addarr-refresh-installation)
+
+
+---
+
 [Features](#-features) | [System Requirements](#-system-requirements) | [Installation](#-installation) | [Usage](#-usage) | [Configuration](#-configuration) | [Contributing](#-contributing)
 
 </div>
@@ -77,6 +97,7 @@ Whether you're managing movies, TV shows, or music, Addarr Refresh makes it simp
 ## 📋 Table of Contents
 
 - [🚀 Addarr Refresh](#-addarr-refresh)
+      - [Install Addarr with a single command](#install-addarr-with-a-single-command)
   - [📋 Table of Contents](#-table-of-contents)
   - [✨ Features](#-features)
   - [💻 System Requirements](#-system-requirements)
@@ -87,9 +108,10 @@ Whether you're managing movies, TV shows, or music, Addarr Refresh makes it simp
       - [Linux (Debian/Ubuntu)](#linux-debianubuntu)
       - [macOS](#macos)
   - [🛠️ Addarr Refresh Installation](#️-addarr-refresh-installation)
-    - [Option 1: Quick Start \& Interactive Setup (Recommended)](#option-1-quick-start--interactive-setup-recommended)
-    - [Option 2: Manual Configuration](#option-2-manual-configuration)
-    - [Option 3: Docker Installation](#option-3-docker-installation)
+    - [Option 1: Quick Start \& Interactive Setup (Recommended for Windows)](#option-1-quick-start--interactive-setup-recommended-for-windows)
+    - [Option 2: Install Script (Linux/macOS)](#option-2-install-script-linuxmacos)
+    - [Option 3: Manual Configuration](#option-3-manual-configuration)
+    - [Option 4: Docker Installation](#option-4-docker-installation)
       - [Using Docker Compose (Recommended)](#using-docker-compose-recommended)
       - [Using Docker manually](#using-docker-manually)
       - [Environment Variables](#environment-variables)
@@ -214,39 +236,112 @@ pip3 --version
 
 ## 🛠️ Addarr Refresh Installation
 
-### Option 1: Quick Start & Interactive Setup (Recommended)
-1. **Install Addarr Refresh**
+### Option 1: Install Script (easy)
+*(Linux/macOS/Windows)*
+
+Install Addarr with a single command
+
+#### Linux/macOS
+
+Using curl:
+```bash
+curl -sSL https://raw.githubusercontent.com/cyneric/addarr/main/install.sh | bash
+```
+
+or Using wget:
+```bash
+wget -qO- https://raw.githubusercontent.com/cyneric/addarr/main/install.sh | bash
+```
+
+The linux/macOS installer will:
+- Create a dedicated installation directory at `~/.addarr`
+- Set up a Python virtual environment
+- Install all required dependencies
+- Create the `addarr` command for easy access
+- Back up any existing installation
+
+After installation:
+1. Run `addarr --setup` to configure the bot
+2. Run `addarr` to start the bot
+
+#### Windows
+
+Using PowerShell:
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/cyneric/addarr/main/install.ps1'))
+```
+
+The windows installer will:
+- Create a dedicated installation directory at `C:\Users\<username>\AppData\Local\Addarr`
+- Set up a Python virtual environment
+- Install all required dependencies
+- Create the `addarr` command for easy access
+- Back up any existing installation
+
+After installation:
+1. Run `addarr --setup` to configure the bot
+2. Run `addarr` to start the bot
+
+
+### Option 2: Git Clone (advanced)
+*(Linux/macOS/Windows)*
+
+*Requires git to be installed and available in the command line.*
+
+1. **Clone the repository**
    ```bash
    git clone https://github.com/Cyneric/Addarr.git
+   ```
+
+2. **Change into the Addarr directory**
+   ```bash
    cd addarr
+   ```
+
+3. **Install dependencies**
+   ```bash
    pip install -r requirements.txt
    ```
 
-2. **Run Setup Wizard**
-   ```bash
-   python run.py --setup
-   ```
-
-3. **Start the Bot**
+4. **Start the Bot**
    ```bash
    python run.py
    ```
 
-### Option 2: Manual Configuration
-1. Copy and edit configuration file:
-   ```bash
-   cp config_example.yaml config.yaml
-   # Edit config.yaml with your settings
-   ```
+   The bot will automatically start the setup wizard of no configuration file is found.
 
-2. Run configuration check:
+
+### Option 3: Manual installation from zip file (advanced)
+  *(Windows)*
+  
+  *Requires python to be installed and available in the command line.*
+
+1. **Download the zip file**
+   Download the zip file from [here](https://github.com/Cyneric/Addarr/archive/refs/heads/main.zip)
+
+2. **Extract the zip file**
+   Extract the zip file and change into the Addarr directory
+
+3. **Copy or rename the config file**
+   Copy or rename the `config_example.yaml` file to `config.yaml`
+
+4. **Edit the config file**
+   Edit the `config.yaml` file with your settings.
+
+5. **Run configuration check**
    ```bash
    python run.py --check
    ```
 
-### Option 3: Docker Installation
+6. **Start the bot**
+   ```bash
+   python run.py
+   ```
 
-#### Using Docker Compose (Recommended)
+### Option 4: Docker Installation (advanced)
+*(Linux/macOS/Windows)*
+
+#### Using Docker Compose
 1. **Clone the repository**
    ```bash
    git clone https://github.com/yourusername/addarr.git
@@ -264,7 +359,7 @@ pip3 --version
    docker-compose up -d
    ```
 
-#### Using Docker manually
+#### Using Docker standalone
 1. **Build the image**
    ```bash
    docker build -t addarr .
@@ -278,11 +373,6 @@ pip3 --version
      -v $(pwd)/logs:/app/logs \
      addarr
    ```
-
-#### Environment Variables
-The following environment variables can be used:
-- `TELEGRAM_TOKEN`: Your Telegram bot token
-- `TZ`: Your timezone (e.g., Europe/London)
 
 ## 🎮 Usage
 
