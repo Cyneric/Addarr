@@ -40,14 +40,23 @@
 Addarr Refresh is a modern Telegram bot that helps you manage your media collection through Radarr, Sonarr, and Lidarr. This user-friendly fork of Addarr adds powerful new features like:
 
   🎯 Improved search accuracy and matching
+  <br>
   🔔 Enhanced notifications and status updates
+  <br>
   🛠️ Interactive setup wizard for easy configuration
+  <br>
   🌐 Multi-language support
+  <br>
   🔒 Advanced user authentication and permissions
+  <br>
   📊 Detailed health monitoring and statistics
+  <br>
   🎨 Modern UI with inline keyboards and rich media
+  <br>
   📁 Helm chart for easy deployment
+  <br>
   🐳 Docker image for easy containerization
+  <br>
   🔍 Validations and error handling
 
 <br>
