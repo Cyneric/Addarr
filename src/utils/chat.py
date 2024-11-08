@@ -1,5 +1,8 @@
 """
-Chat utility functions.
+Filename: chat.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Chat utility functions.
 
 This module provides utility functions for handling chat-related operations.
 """

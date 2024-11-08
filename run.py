@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-Main entry point for Addarr.
+Filename: run.py
+Author: Christian Blank
+Created Date: 2024-11-08
+Description: Main entry point for Addarr.
 """
 
 import sys

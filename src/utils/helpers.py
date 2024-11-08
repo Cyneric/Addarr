@@ -1,5 +1,8 @@
 """
-Helper functions module.
+Filename: helpers.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Helper functions module.
 
 This module contains utility functions used throughout the application,
 including authentication checks, chat ID management, and data formatting.

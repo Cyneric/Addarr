@@ -1,7 +1,8 @@
 """
-Main application module.
-
-This module initializes and runs the Telegram bot application.
+Filename: main.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Main application module for Addarr that handles the initialization and running of the Telegram bot.
 """
 
 import asyncio

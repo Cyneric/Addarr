@@ -1,5 +1,8 @@
 """
-Validation and pre-run checks module.
+Filename: validation.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Validation and pre-run checks module.
 
 This module handles all validation, including configuration checks,
 dependency verification, and pre-run requirements.

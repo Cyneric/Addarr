@@ -1,5 +1,8 @@
 """
-Project path definitions module.
+Filename: definitions.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Project path definitions module.
 
 This module defines all the important paths used throughout the application,
 including paths for configuration files, logs, translations, and user data.

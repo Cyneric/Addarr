@@ -1,5 +1,8 @@
 """
-Pre-run checks module.
+Filename: prerun.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Pre-run checks module.
 
 This module handles all pre-run checks like dependency verification,
 colorama initialization, and other startup requirements.

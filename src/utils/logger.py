@@ -1,7 +1,8 @@
 """
-Logging configuration module.
-
-This module sets up logging for the application, configuring both file
+Filename: logger.py
+Author: Christian Blank
+Created Date: 2024-11-08
+Description: Logging configuration module for Addarr. This module sets up logging for the application, configuring both file
 and console logging with proper formatting and log rotation. It provides
 a consistent logging interface across the application.
 """

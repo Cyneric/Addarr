@@ -1,5 +1,8 @@
 """
-Configuration file handler module.
+Filename: config_handler.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Configuration file handler module.
 
 This module handles all configuration file operations including:
 - Creating new config from example

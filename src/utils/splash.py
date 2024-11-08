@@ -1,5 +1,8 @@
 """
-Splash screen module.
+Filename: splash.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Splash screen module.
 
 This module provides the ASCII art splash screen for the application.
 Can be used by both the main application and setup script.

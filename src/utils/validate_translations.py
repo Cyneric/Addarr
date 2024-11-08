@@ -1,5 +1,8 @@
 """
-Translation validation script.
+Filename: validate_translations.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Translation validation script.
 
 This script validates translation files against the template to ensure
 all required keys are present and properly formatted.

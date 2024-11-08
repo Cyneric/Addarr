@@ -1,5 +1,8 @@
 """
-Backup utility module.
+Filename: backup.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Backup utility module.
 
 This module provides backup functionality for Addarr configuration files.
 """

@@ -1,5 +1,8 @@
 """
-Utils package initialization.
+Filename: __init__.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Utils package initialization.
 """
 
 from colorama import init as init_colorama

@@ -1,5 +1,8 @@
 """
-Interactive setup script for Addarr.
+Filename: setup.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Interactive setup script for Addarr.
 
 This script guides users through the initial setup process, helping them:
 1. Create necessary directories

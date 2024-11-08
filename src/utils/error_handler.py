@@ -1,7 +1,8 @@
 """
-Error handling module.
-
-This module provides centralized error handling and user feedback functionality.
+Filename: error_handler.py
+Author: Christian Blank (https://github.com/Cyneric)
+Created Date: 2024-11-08
+Description: Error handling module for Addarr. This module provides centralized error handling and user feedback functionality.
 """
 
 from colorama import Fore, Style
