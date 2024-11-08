@@ -1,4 +1,8 @@
-#IGNORE
+# filename: .gitignore
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Git ignore file for Addarr Refresh Telegram Bot.
+
 .vscode/
 __pycache__/
 
