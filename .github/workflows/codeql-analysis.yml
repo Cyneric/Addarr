@@ -1,8 +1,8 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
+# filename: codeql-analysis.yml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: GitHub Actions workflow to perform CodeQL analysis.
+
 name: "CodeQL"
 
 on:

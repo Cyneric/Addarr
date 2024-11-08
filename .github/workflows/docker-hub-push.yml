@@ -1,3 +1,8 @@
+# filename: docker-hub-push.yml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: GitHub Actions workflow to push Docker images to Docker Hub.
+
 name: CI to Docker Hub
 on:
   push:
