@@ -1,18 +1,20 @@
 """
 Filename: transmission.py
-Author: Christian Blank (https://github.com/Cyneric)
-Created Date: 2024-11-08
-Description: Transmission handler module.
+Author: Christian Blank (https://github.com/cyneric)
+Created Date: 2024-11-09
+Description: Telegram command handler for Transmission operations.
 """
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, ContextTypes, CallbackQueryHandler
-from colorama import Fore
+from telegram import Update
+from telegram.ext import CommandHandler, CallbackContext, CallbackQueryHandler
+from telegram.constants import ParseMode
+from typing import List
 
-from src.utils.logger import get_logger, log_user_interaction
-from src.services.transmission import TransmissionService
-from src.bot.handlers.auth import require_auth
-from src.services.translation import TranslationService
+
+from ...services.transmission import transmission_service
+from ...utils.logger import get_logger
+from src.bot.keyboards import get_yes_no_keyboard
+from ...utils.error_handler import ServiceNotEnabledError
 
 logger = get_logger("addarr.handlers.transmission")
 
@@ -20,81 +22,86 @@ class TransmissionHandler:
     """Handler for Transmission-related commands"""
     
     def __init__(self):
-        try:
-            self.transmission_service = TransmissionService()
-            self.translation = TranslationService()
-        except Exception as e:
-            logger.error(f"Failed to initialize TransmissionService: {e}")
-            self.transmission_service = None
-            
-    def get_handler(self):
-        """Get the conversation handler for Transmission"""
-        if not self.transmission_service:
-            logger.warning("Transmission service not available, skipping handler registration")
-            return []
-            
+        """Initialize the handler"""
+        self.service = transmission_service
+        
+    def get_handler(self) -> List:
+        """Get the command and callback handlers
+        
+        Returns:
+            List of handlers
+        """
         return [
-            CommandHandler("transmission", self.handle_transmission),
-            CallbackQueryHandler(self.handle_speed_selection, pattern="^transmission_speed_")
+            CommandHandler("transmission", self.transmission_command),
+            CallbackQueryHandler(self.handle_callback, pattern=r"^transmission_.*")
         ]
         
-    @require_auth
-    async def handle_transmission(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle transmission command"""
-        if not update.effective_user:
-            return
-            
-        log_user_interaction(logger, update.effective_user, "/transmission")
+    async def transmission_command(self, update: Update, context: CallbackContext) -> None:
+        """Handle /transmission command
         
-        if not self.transmission_service:
+        Shows Transmission status and turtle mode options
+        """
+        if not self.service.is_enabled():
             await update.message.reply_text(
-                self.translation.get_text("Transmission.NotEnabled")
+                "❌ Transmission integration is not enabled.\n"
+                "Enable it in config.yaml to use this feature."
             )
             return
             
-        # Create speed selection keyboard
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    self.translation.get_text("Transmission.TSL"), 
-                    callback_data="transmission_speed_tsl"
-                ),
-                InlineKeyboardButton(
-                    self.translation.get_text("Transmission.Normal"), 
-                    callback_data="transmission_speed_normal"
-                )
-            ]
-        ]
+        status = self.service.get_status()
         
-        await update.message.reply_text(
-            self.translation.get_text("Transmission.Speed"),
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        
-    async def handle_speed_selection(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle speed selection"""
-        if not update.callback_query:
+        if not status["connected"]:
+            await update.message.reply_text(
+                f"❌ Cannot connect to Transmission:\n{status.get('error', 'Unknown error')}"
+            )
             return
             
+        # Create status message
+        turtle_status = "🐢 Enabled" if status["alt_speed_enabled"] else "🚀 Disabled"
+        message = (
+            f"*Transmission Status*\n\n"
+            f"Version: `{status['version']}`\n"
+            f"Turtle Mode: {turtle_status}\n\n"
+            f"Would you like to toggle Turtle Mode?"
+        )
+        
+        # Create inline keyboard
+        keyboard = get_yes_no_keyboard(
+            "transmission_toggle",
+            "Yes, toggle turtle mode",
+            "No, keep current setting"
+        )
+        
+        await update.message.reply_text(
+            message,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        
+    async def handle_callback(self, update: Update, context: CallbackContext) -> None:
+        """Handle callback queries for Transmission commands"""
         query = update.callback_query
         await query.answer()
         
-        speed = query.data.replace("transmission_speed_", "")
-        
-        try:
-            if speed == "tsl":
-                await self.transmission_service.enable_alt_speed()
-                message_key = "Transmission.ChangedToTSL"
+        if query.data == "transmission_toggle_yes":
+            # Get current status and toggle
+            status = self.service.get_status()
+            current_state = status.get("alt_speed_enabled", False)
+            
+            if self.service.set_alt_speed(not current_state):
+                new_state = "enabled 🐢" if not current_state else "disabled 🚀"
+                message = f"✅ Turtle Mode {new_state}"
             else:
-                await self.transmission_service.disable_alt_speed()
-                message_key = "Transmission.ChangedToNormal"
+                message = "❌ Failed to toggle Turtle Mode"
                 
-            await query.message.edit_text(
-                self.translation.get_text(message_key)
+            # Update the message
+            await query.edit_message_text(
+                message,
+                parse_mode=ParseMode.MARKDOWN
             )
             
-        except Exception as e:
-            logger.error(f"Error setting Transmission speed: {e}")
-            await query.message.edit_text(
-                self.translation.get_text("Transmission.Error", default="Error setting speed limit")
+        elif query.data == "transmission_toggle_no":
+            await query.edit_message_text(
+                "👍 Keeping current settings",
+                parse_mode=ParseMode.MARKDOWN
             ) 

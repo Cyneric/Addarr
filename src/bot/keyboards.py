@@ -167,3 +167,23 @@ def get_back_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("🔙 Back", callback_data="menu_back")]
     ]
     return InlineKeyboardMarkup(keyboard) 
+
+
+def get_yes_no_keyboard(callback_prefix: str, yes_text: str = "Yes", no_text: str = "No") -> InlineKeyboardMarkup:
+    """Create a Yes/No inline keyboard
+    
+    Args:
+        callback_prefix: Prefix for callback data
+        yes_text: Text for Yes button
+        no_text: Text for No button
+        
+    Returns:
+        InlineKeyboardMarkup: Keyboard with Yes/No buttons
+    """
+    keyboard = [
+        [
+            InlineKeyboardButton(yes_text, callback_data=f"{callback_prefix}_yes"),
+            InlineKeyboardButton(no_text, callback_data=f"{callback_prefix}_no")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard) 
