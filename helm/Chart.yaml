@@ -1,4 +1,7 @@
-# Helm chart for Addarr Refresh
+# filename: Chart.yaml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Helm chart for Addarr Refresh
 
 apiVersion: v2
 appVersion: latest

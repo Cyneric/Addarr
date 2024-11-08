@@ -1,4 +1,7 @@
-# PersistentVolumeClaim for the application
+# filename: pvc.yaml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: PersistentVolumeClaim for the application
 
 apiVersion: v1
 kind: PersistentVolumeClaim

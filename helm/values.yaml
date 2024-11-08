@@ -1,4 +1,8 @@
-# Addarr Refresh Helm chart values
+# filename: values.yaml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Addarr Refresh Helm chart values
+
 # Required: Set your Storage Class below for dynamic provisioning of PVC for storing chatids
 
 storageClassName: ""

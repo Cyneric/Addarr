@@ -1,4 +1,7 @@
-# Deployment for the application
+# filename: deployment.yaml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: Deployment for the application
 
 apiVersion: apps/v1
 kind: Deployment

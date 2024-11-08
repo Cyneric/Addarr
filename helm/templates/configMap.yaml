@@ -1,4 +1,7 @@
-# ConfigMap for the application configuration
+# filename: configMap.yaml
+# author: Christian Blank (https://github.com/Cyneric)
+# created date: 2024-11-08
+# description: ConfigMap for the application configuration
 
 apiVersion: v1
 kind: ConfigMap
