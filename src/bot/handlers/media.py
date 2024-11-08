@@ -18,6 +18,7 @@ from telegram.ext import (
 )
 from colorama import Fore
 
+from src.bot.keyboards import get_system_keyboard
 from src.utils.logger import get_logger, log_user_interaction
 from src.bot.handlers.auth import require_auth
 from src.services.media import MediaService
