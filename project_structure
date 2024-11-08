@@ -1,13 +1,14 @@
 addarr/
 ├── src/                    # Source code directory
-│   ├── api/               # API clients
+│   ├── api/               # API clients for external services
 │   │   ├── __init__.py
-│   │   ├── base.py       # Base API client
-│   │   ├── radarr.py     # Radarr API client
-│   │   ├── sonarr.py     # Sonarr API client
-│   │   ├── lidarr.py     # Lidarr API client
-│   │   ├── transmission.py # Transmission API client
-│   │   └── sabnzbd.py    # SABnzbd API client
+│   │   ├── base.py       # Base API client with common functionality
+│   │   ├── radarr.py     # Radarr API integration
+│   │   ├── sonarr.py     # Sonarr API integration
+│   │   ├── lidarr.py     # Lidarr API integration
+│   │   ├── transmission.py # Transmission API integration
+│   │   └── sabnzbd.py    # SABnzbd API integration
+│   │
 │   ├── bot/              # Telegram bot components
 │   │   ├── __init__.py
 │   │   ├── handlers/     # Command handlers
@@ -16,37 +17,85 @@ addarr/
 │   │   │   ├── media.py  # Media management handler
 │   │   │   ├── start.py  # Start/menu handler
 │   │   │   ├── help.py   # Help handler
+│   │   │   ├── status.py # Status and health monitoring
 │   │   │   ├── sabnzbd.py # SABnzbd handler
 │   │   │   └── transmission.py # Transmission handler
-│   │   └── keyboards.py  # Keyboard layouts
+│   │   └── keyboards.py  # Keyboard layouts and button definitions
+│   │
 │   ├── config/           # Configuration management
 │   │   ├── __init__.py
-│   │   └── settings.py   # Configuration handling
+│   │   └── settings.py   # Configuration handling and validation
+│   │
 │   ├── services/         # Business logic services
 │   │   ├── __init__.py
-│   │   ├── media.py      # Media service
+│   │   ├── media.py      # Media service orchestration
+│   │   ├── health.py     # Health monitoring service
+│   │   ├── cache.py      # Caching service
+│   │   ├── scheduler.py  # Job scheduling service
 │   │   ├── translation.py # Translation service
 │   │   ├── transmission.py # Transmission service
 │   │   └── sabnzbd.py    # SABnzbd service
-│   ├── utils/            # Utility functions
+│   │
+│   ├── utils/            # Utility functions and helpers
 │   │   ├── __init__.py
-│   │   ├── logger.py     # Logging setup
+│   │   ├── logger.py     # Logging setup and configuration
+│   │   ├── splash.py     # CLI splash screen and version info
+│   │   ├── validation.py # Input validation helpers
+│   │   ├── error_handler.py # Centralized error handling
 │   │   └── validate_translations.py # Translation validation
+│   │
+│   ├── jobs/             # Scheduled jobs and tasks
+│   │   ├── __init__.py
+│   │   └── maintenance.py # Maintenance tasks
+│   │
 │   ├── __init__.py
+│   ├── definitions.py    # Global constants and paths
 │   └── main.py          # Application entry point
+│
 ├── translations/         # Translation files
 │   ├── addarr.template.yml # Translation template
-│   ├── addarr.en-us.yml
-│   ├── addarr.de-de.yml
-│   ├── addarr.es-es.yml
-│   ├── addarr.fr-fr.yml
-│   ├── addarr.it-it.yml
-│   ├── addarr.nl-be.yml
-│   ├── addarr.pl-pl.yml
-│   └── addarr.pt-pt.yml
+│   ├── addarr.en-us.yml   # English translations
+│   ├── addarr.de-de.yml   # German translations
+│   ├── addarr.es-es.yml   # Spanish translations
+│   ├── addarr.fr-fr.yml   # French translations
+│   ├── addarr.it-it.yml   # Italian translations
+│   ├── addarr.nl-be.yml   # Dutch translations
+│   ├── addarr.pl-pl.yml   # Polish translations
+│   └── addarr.pt-pt.yml   # Portuguese translations
+│
+├── helm/                # Kubernetes Helm chart
+│   ├── Chart.yaml       # Chart metadata
+│   ├── README.md        # Chart documentation
+│   ├── values.yaml      # Default chart values
+│   └── templates/       # Chart templates
+│       ├── deployment.yaml
+│       ├── service.yaml
+│       ├── configmap.yaml
+│       └── pvc.yaml
+│
+├── scripts/            # Utility scripts
+│   ├── install.sh     # Linux/macOS installer
+│   └── install.ps1    # Windows installer
+│
+├── tests/             # Test suite
+│   ├── __init__.py
+│   ├── conftest.py    # Test configuration
+│   ├── test_api/      # API tests
+│   ├── test_services/ # Service tests
+│   └── test_utils/    # Utility tests
+│
 ├── config.yaml          # User configuration
 ├── config_example.yaml  # Example configuration
 ├── run.py              # Application launcher
-├── requirements.txt    # Python dependencies
-├── Dockerfile         # Docker build file
-└── docker-compose.yml # Docker compose config
+├── requirements.txt    # Production dependencies
+├── requirements-dev.txt # Development dependencies
+├── Dockerfile          # Docker build file
+├── docker-compose.yml  # Docker compose config
+├── .dockerignore       # Docker ignore file
+├── .gitignore         # Git ignore file
+├── .flake8            # Flake8 configuration
+├── pyproject.toml     # Project metadata
+├── setup.cfg          # Package configuration
+├── CHANGELOG.md       # Version history
+├── LICENSE           # MIT license
+└── README.md         # Project documentation
