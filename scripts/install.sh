@@ -31,27 +31,69 @@ else
     # When script is piped to bash, try to download files directly
     SOURCE_DIR=$(mktemp -d)
     echo -e "${BLUE}Downloading Addarr files...${NC}"
+    echo -e "${BLUE}Using temporary directory: $SOURCE_DIR${NC}"
 
-    # Download required files - using curl instead of wget for better compatibility
-    curl -sfL https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt -o "$SOURCE_DIR/requirements.txt"
+    # Function to download a file with error checking
+    download_file() {
+        local url="$1"
+        local output="$2"
+        echo -e "${BLUE}Downloading: $url${NC}"
 
-    # Create src directory and download main files
+        # Try curl first with strict SSL
+        if curl -sfL "$url" -o "$output"; then
+            echo -e "${GREEN}Successfully downloaded: $output${NC}"
+            return 0
+        fi
+
+        # If curl fails, try with insecure option (not recommended but might help diagnose the issue)
+        echo -e "${YELLOW}First attempt failed, trying alternate method...${NC}"
+        if curl -sfLk "$url" -o "$output"; then
+            echo -e "${GREEN}Successfully downloaded: $output (using relaxed SSL)${NC}"
+            return 0
+        fi
+
+        # If curl still fails, try wget as a fallback
+        echo -e "${YELLOW}Curl failed, trying wget...${NC}"
+        if wget --quiet "$url" -O "$output"; then
+            echo -e "${GREEN}Successfully downloaded: $output (using wget)${NC}"
+            return 0
+        fi
+
+        # If all methods fail, show detailed error information
+        echo -e "${RED}Failed to download: $url${NC}"
+        echo -e "${RED}Curl Status: $(curl -s -o /dev/null -w "%{http_code}" "$url")${NC}"
+        echo -e "${RED}Curl Error: $(curl -sS "$url" 2>&1)${NC}"
+        return 1
+    }
+
+    # Create directories
     mkdir -p "$SOURCE_DIR/src"
-    curl -sfL https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py -o "$SOURCE_DIR/src/run.py"
 
-    # Download config example
-    curl -sfL https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml -o "$SOURCE_DIR/config_example.yaml"
+    # Download files with error checking
+    files_to_download=(
+        "https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt:$SOURCE_DIR/requirements.txt"
+        "https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py:$SOURCE_DIR/src/run.py"
+        "https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml:$SOURCE_DIR/config_example.yaml"
+    )
 
-    # Check if downloads were successful
-    if [ ! -f "$SOURCE_DIR/requirements.txt" ] || [ ! -f "$SOURCE_DIR/src/run.py" ] || [ ! -f "$SOURCE_DIR/config_example.yaml" ]; then
-        echo -e "${RED}Failed to download required files${NC}"
+    download_failed=0
+    for file_pair in "${files_to_download[@]}"; do
+        url="${file_pair%%:*}"
+        output="${file_pair#*:}"
+        if ! download_file "$url" "$output"; then
+            download_failed=1
+        fi
+    done
+
+    if [ $download_failed -eq 1 ]; then
+        echo -e "${RED}One or more files failed to download${NC}"
+        echo -e "${YELLOW}Cleaning up temporary directory: $SOURCE_DIR${NC}"
         rm -rf "$SOURCE_DIR"
         exit 1
     fi
 
-    # Debug output
-    echo -e "${BLUE}Files downloaded to: $SOURCE_DIR${NC}"
-    ls -la "$SOURCE_DIR"
+    echo -e "${BLUE}Directory contents:${NC}"
+    ls -R "$SOURCE_DIR"
 fi
 
 # Spinner function
@@ -284,12 +326,33 @@ setup_configuration() {
     fi
 }
 
+# Check for required tools
+check_required_tools() {
+    local missing_tools=()
+
+    if ! command -v curl >/dev/null && ! command -v wget >/dev/null; then
+        missing_tools+=("curl or wget")
+    fi
+
+    if [ ${#missing_tools[@]} -ne 0 ]; then
+        echo -e "${RED}Error: Required tools are missing: ${missing_tools[*]}${NC}"
+        echo -e "${YELLOW}Please install the missing tools and try again.${NC}"
+        echo -e "On Ubuntu/Debian: sudo apt-get install curl wget"
+        echo -e "On Fedora: sudo dnf install curl wget"
+        exit 1
+    fi
+}
+
+# Call the check near the start of the script
+check_required_tools
+
 # Main installation process
-echo -e "${BLUE}
-╔═══════════════════════════════════════╗
-║           Addarr Installer            ║
-║     Media Management Telegram Bot     ║
-╚═══════════════════════════════════════╝${NC}"
+echo -e "${BLUE}"
+echo "======================================"
+echo "          Addarr Installer            "
+echo "    Media Management Telegram Bot     "
+echo "======================================"
+echo -e "${NC}"
 
 # Check Python and pip versions (keep existing checks)
 # [Previous version checking code remains unchanged]
