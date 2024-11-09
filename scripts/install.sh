@@ -49,6 +49,108 @@ MIN_PYTHON_VERSION="3.8"
 # Minimum required pip version
 MIN_PIP_VERSION="20.0" # Example minimum version
 
+# Check for sudo privileges
+check_sudo() {
+    if [ "$EUID" -ne 0 ]; then
+        echo -e "${YELLOW}This script requires sudo privileges to install system packages.${NC}"
+        echo -e "${YELLOW}Please run with: sudo $0${NC}"
+        exit 1
+    fi
+}
+
+# Function to install system packages
+install_system_packages() {
+    local packages=("$@")
+    local system
+    
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        system="$ID"
+    elif [ -f /etc/debian_version ]; then
+        system="debian"
+    elif [ -f /etc/redhat-release ]; then
+        system="rhel"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        system="macos"
+    else
+        system="unknown"
+    fi
+
+    echo -e "${BLUE}Installing required system packages...${NC}"
+    
+    case "$system" in
+        "ubuntu"|"debian")
+            apt-get update -qq
+            apt-get install -y "${packages[@]}"
+            ;;
+        "fedora")
+            dnf install -y "${packages[@]}"
+            ;;
+        "rhel"|"centos")
+            yum install -y "${packages[@]}"
+            ;;
+        "arch")
+            pacman -Sy --noconfirm "${packages[@]}"
+            ;;
+        "macos")
+            if ! command -v brew >/dev/null 2>&1; then
+                echo -e "${RED}Homebrew is required for macOS installation.${NC}"
+                echo -e "Install from: https://brew.sh"
+                exit 1
+            fi
+            for package in "${packages[@]}"; do
+                brew install "$package"
+            done
+            ;;
+        *)
+            echo -e "${RED}Unsupported system: $system${NC}"
+            echo -e "Please install the following packages manually: ${packages[*]}"
+            exit 1
+            ;;
+    esac
+}
+
+# Check for required tools and install if missing
+check_and_install_requirements() {
+    local missing_packages=()
+
+    # Check for unzip
+    if ! command -v unzip >/dev/null 2>&1; then
+        missing_packages+=("unzip")
+    fi
+
+    # Check for Python
+    if ! command -v python3 >/dev/null 2>&1; then
+        case "$(uname -s)" in
+            Linux*)
+                missing_packages+=("python3" "python3-pip" "python3-venv")
+                ;;
+            Darwin*)
+                missing_packages+=("python")
+                ;;
+        esac
+    fi
+
+    # Check for pip
+    if ! command -v pip3 >/dev/null 2>&1 && ! command -v pip >/dev/null 2>&1; then
+        case "$(uname -s)" in
+            Linux*)
+                missing_packages+=("python3-pip")
+                ;;
+        esac
+    fi
+
+    # If there are missing packages, install them
+    if [ ${#missing_packages[@]} -gt 0 ]; then
+        echo -e "${YELLOW}The following packages need to be installed: ${missing_packages[*]}${NC}"
+        check_sudo
+        install_system_packages "${missing_packages[@]}"
+    fi
+}
+
+# Call the check and install function early in the script
+check_and_install_requirements
+
 echo -e "${BLUE}
 ╔═══════════════════════════════════════╗
 ║           Addarr Installer            ║
@@ -242,44 +344,6 @@ fi
 # Create installation directory
 mkdir -p "$INSTALL_DIR"
 
-# Check for unzip
-if ! command -v unzip >/dev/null 2>&1; then
-    echo -e "${RED}Error: 'unzip' is not installed${NC}"
-    echo -e "${YELLOW}Please install unzip using one of these methods:${NC}\n"
-    
-    case "$(uname -s)" in
-    Linux*)
-        if command -v apt-get >/dev/null 2>&1; then
-            echo "For Debian/Ubuntu:"
-            echo "  sudo apt update"
-            echo "  sudo apt install unzip"
-        elif command -v dnf >/dev/null 2>&1; then
-            echo "For Fedora:"
-            echo "  sudo dnf install unzip"
-        elif command -v pacman >/dev/null 2>&1; then
-            echo "For Arch Linux:"
-            echo "  sudo pacman -S unzip"
-        elif command -v yum >/dev/null 2>&1; then
-            echo "For CentOS/RHEL:"
-            echo "  sudo yum install unzip"
-        fi
-        ;;
-    Darwin*)
-        echo "Using Homebrew:"
-        echo "  brew install unzip"
-        ;;
-    MINGW*|CYGWIN*|MSYS*)
-        echo "Using Chocolatey:"
-        echo "  choco install unzip"
-        echo -e "\nOr download from:"
-        echo "  http://gnuwin32.sourceforge.net/packages/unzip.htm"
-        ;;
-    esac
-    
-    echo -e "\n${YELLOW}Please install unzip and run this script again.${NC}"
-    exit 1
-fi
-
 # Download and extract repository
 echo -e "\n${BLUE}Downloading Addarr...${NC}"
 TMP_ZIP="/tmp/addarr.zip"
@@ -341,7 +405,7 @@ SHORTCUT_DIR="$HOME/.local/bin"
 mkdir -p "$SHORTCUT_DIR"
 
 echo -e "\n${BLUE}Creating command shortcut...${NC}"
-cat >"$SHORTCUT_DIR/addarr" <<'EOF'
+cat > "$SHORTCUT_DIR/addarr" << 'EOF'
 #!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 INSTALL_DIR="$HOME/.addarr"
