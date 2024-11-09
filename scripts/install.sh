@@ -330,6 +330,22 @@ else
     echo -e "${BLUE}pip version is up to date${NC}"
 fi
 
+# Get system information
+get_system_info() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    else
+        echo "unknown"
+    fi
+}
+
 # Function to check if git is installed
 check_git() {
     if ! command -v git >/dev/null 2>&1; then
@@ -446,22 +462,6 @@ get_pip_cmd() {
         echo "pip"
     else
         echo ""
-    fi
-}
-
-# Get system information
-get_system_info() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        echo "$ID"
-    elif [ -f /etc/debian_version ]; then
-        echo "debian"
-    elif [ -f /etc/redhat-release ]; then
-        echo "rhel"
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "macos"
-    else
-        echo "unknown"
     fi
 }
 
