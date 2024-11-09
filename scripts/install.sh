@@ -511,12 +511,57 @@ if [ -z "$PYTHON_CMD" ]; then
     fi
 fi
 
+# Function to install python3-venv
+install_python_venv() {
+    echo -e "${YELLOW}Installing python3-venv...${NC}"
+    case "$(get_system_info)" in
+        "ubuntu"|"debian")
+            if ! sudo apt-get update && sudo apt-get install -y python3-venv; then
+                echo -e "${RED}Failed to install python3-venv${NC}"
+                return 1
+            fi
+            ;;
+        "fedora")
+            if ! sudo dnf install -y python3-venv; then
+                echo -e "${RED}Failed to install python3-venv${NC}"
+                return 1
+            fi
+            ;;
+        "rhel"|"centos")
+            if ! sudo yum install -y python3-venv; then
+                echo -e "${RED}Failed to install python3-venv${NC}"
+                return 1
+            fi
+            ;;
+        "arch")
+            # python-venv is included with python on Arch
+            return 0
+            ;;
+        *)
+            echo -e "${RED}Unable to install python3-venv automatically.${NC}"
+            echo -e "${YELLOW}Please install python3-venv manually and try again.${NC}"
+            return 1
+            ;;
+    esac
+    return 0
+}
+
 # Create and activate virtual environment
 echo -e "\n${BLUE}Creating virtual environment...${NC}"
-if ! $PYTHON_CMD -m venv "$INSTALL_DIR/venv"; then
-    echo -e "${RED}Failed to create virtual environment. Please install python3-venv:${NC}"
-    echo "sudo apt install python3-venv"
-    exit 1
+if ! $PYTHON_CMD -m venv "$INSTALL_DIR/venv" 2>/dev/null; then
+    echo -e "${YELLOW}Failed to create virtual environment. Installing required package...${NC}"
+    if ! install_python_venv; then
+        echo -e "${RED}Failed to install python3-venv. Please install it manually:${NC}"
+        echo -e "${YELLOW}For Debian/Ubuntu: sudo apt install python3-venv${NC}"
+        echo -e "${YELLOW}For Fedora: sudo dnf install python3-venv${NC}"
+        echo -e "${YELLOW}For RHEL/CentOS: sudo yum install python3-venv${NC}"
+        exit 1
+    fi
+    # Try creating virtual environment again after installing python3-venv
+    if ! $PYTHON_CMD -m venv "$INSTALL_DIR/venv"; then
+        echo -e "${RED}Failed to create virtual environment even after installing python3-venv${NC}"
+        exit 1
+    fi
 fi
 
 # Activate virtual environment
