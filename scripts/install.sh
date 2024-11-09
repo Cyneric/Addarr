@@ -257,15 +257,40 @@ if ! unzip -o -q "$TMP_ZIP" -d "/tmp"; then
     exit 1
 fi
 
+# Find the correct directory name
+EXTRACTED_DIR=$(find /tmp -maxdepth 1 -type d -name "Addarr-*" -print -quit)
+if [ -z "$EXTRACTED_DIR" ]; then
+    echo -e "${RED}Could not find extracted directory${NC}"
+    rm -f "$TMP_ZIP"
+    exit 1
+fi
+
 # Move files to installation directory (force overwrite)
+echo -e "${BLUE}Installing files...${NC}"
 rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
-cp -rf /tmp/addarr-main/* "$INSTALL_DIR/"
-cp -rf /tmp/addarr-main/.* "$INSTALL_DIR/" 2>/dev/null || true
+
+if ! cp -rf "$EXTRACTED_DIR"/* "$INSTALL_DIR/"; then
+    echo -e "${RED}Failed to copy files${NC}"
+    rm -f "$TMP_ZIP"
+    rm -rf "$EXTRACTED_DIR"
+    exit 1
+fi
+
+# Copy hidden files (if any)
+cp -rf "$EXTRACTED_DIR"/.[!.]* "$INSTALL_DIR/" 2>/dev/null || true
 
 # Cleanup
 rm -f "$TMP_ZIP"
-rm -rf "/tmp/addarr-main"
+rm -rf "$EXTRACTED_DIR"
+
+# Verify requirements.txt exists
+if [ ! -f "$INSTALL_DIR/requirements.txt" ]; then
+    echo -e "${RED}Error: requirements.txt not found in installation directory${NC}"
+    echo -e "${BLUE}Contents of $INSTALL_DIR:${NC}"
+    ls -la "$INSTALL_DIR"
+    exit 1
+fi
 
 # Create necessary directories
 echo -e "\n${BLUE}Creating directory structure...${NC}"
@@ -421,4 +446,37 @@ if ! $PYTHON_CMD run.py --setup; then
     echo -e "${RED}Failed to start setup wizard.${NC}"
     echo -e "${YELLOW}You can run it manually later with: $PYTHON_CMD run.py --setup${NC}"
     exit 1
+fi
+
+# Installation Summary
+echo -e "\n${GREEN}╔═══════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║         Installation Complete! 🎉      ║${NC}"
+echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}\n"
+
+echo -e "${BLUE}📂 Installation Details:${NC}"
+echo -e "   • Installation Directory: ${GREEN}$INSTALL_DIR${NC}"
+echo -e "   • Command Location: ${GREEN}$SHORTCUT_DIR/addarr${NC}"
+echo -e "   • Config File: ${GREEN}$INSTALL_DIR/config.yaml${NC}"
+echo -e "   • Log Directory: ${GREEN}$INSTALL_DIR/logs${NC}"
+
+echo -e "\n${BLUE}🚀 Next Steps:${NC}"
+echo -e "   1. Run setup wizard: ${YELLOW}addarr --setup${NC}"
+echo -e "   2. Start Addarr: ${YELLOW}addarr${NC}"
+echo -e "   3. Stop Addarr: ${YELLOW}Ctrl+C${NC}"
+
+echo -e "\n${BLUE}📚 Documentation:${NC}"
+echo -e "   • GitHub Wiki: ${YELLOW}https://github.com/cyneric/addarr/wiki${NC}"
+echo -e "   • Report Issues: ${YELLOW}https://github.com/cyneric/addarr/issues${NC}"
+
+echo -e "\n${BLUE}💡 Quick Tips:${NC}"
+echo -e "   • Run setup wizard again: ${YELLOW}addarr --setup${NC}"
+echo -e "   • Check configuration: ${YELLOW}addarr --check${NC}"
+echo -e "   • Backup configuration: ${YELLOW}addarr --backup${NC}"
+echo -e "   • Edit config: ${YELLOW}nano $INSTALL_DIR/config.yaml${NC}"
+
+# Add note about PATH if it was modified
+if [[ ":$PATH:" != *":$SHORTCUT_DIR:"* ]]; then
+    echo -e "${YELLOW}NOTE: Please restart your terminal or run:${NC}"
+    echo -e "${YELLOW}source ~/.bashrc${NC}"
+    echo -e "${YELLOW}to use the 'addarr' command.${NC}\n"
 fi
