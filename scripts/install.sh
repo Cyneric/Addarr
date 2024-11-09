@@ -177,8 +177,8 @@ run_with_timeout() {
 
     echo -ne "${BLUE}${description}...${NC}"
 
-    # Remove quotes from command to prevent path issues
-    command=$(echo "$command" | tr -d '"')
+    # Remove surrounding quotes but preserve internal quotes
+    command=$(echo "$command" | sed 's/^"\(.*\)"$/\1/')
 
     if [ "$hide_output" = true ]; then
         # First try: With hidden output
@@ -284,7 +284,7 @@ setup_configuration() {
 echo -e "${BLUE}
 ╔═══════════════════════════════════════╗
 ║           Addarr Installer            ║
-     Media Management Telegram Bot     ║
+║     Media Management Telegram Bot     ║
 ╚═══════════════════════════════════════╝${NC}"
 
 # Check Python and pip versions (keep existing checks)
@@ -301,12 +301,12 @@ if [ ! -f "$SOURCE_DIR/requirements.txt" ]; then
 fi
 
 # Updated command without quotes around the path
-if ! run_with_timeout "pip install --user -r $SOURCE_DIR/requirements.txt" $INSTALL_TIMEOUT "Installing required packages" true; then
+if ! run_with_timeout "pip install --user -r '$SOURCE_DIR/requirements.txt'" $INSTALL_TIMEOUT "Installing required packages" true; then
     echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
     echo -e "${YELLOW}Would you like to retry with more detailed console output? [Y/n]${NC}"
     read -r response
     if [[ ! "$response" =~ ^([nN][oO]|[nN])$ ]]; then
-        run_with_timeout "pip install --user -r $SOURCE_DIR/requirements.txt" $INSTALL_TIMEOUT "Retrying installation" false
+        run_with_timeout "pip install --user -r '$SOURCE_DIR/requirements.txt'" $INSTALL_TIMEOUT "Retrying installation" false
     fi
 fi
 
