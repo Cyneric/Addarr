@@ -28,7 +28,9 @@ command_exists() {
 
 # Function to compare version numbers
 version_compare() {
-    echo "$1" "$2" | awk '{if ($1 < $2) exit 1; exit 0}'
+    # $1 is current version, $2 is minimum required version
+    printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1 | grep -q "^$2$"
+    return $?
 }
 
 # Function to check Python version
