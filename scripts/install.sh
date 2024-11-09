@@ -239,34 +239,167 @@ if ! run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Instal
     fi
 fi
 
+# Create installation directory if it doesn't exist
+INSTALL_DIR="$HOME/.addarr"
+echo -e "\n${BLUE}Installing Addarr to: $INSTALL_DIR${NC}"
+
+if [ -d "$INSTALL_DIR" ]; then
+    echo -e "${YELLOW}Installation directory already exists. Creating backup...${NC}"
+    BACKUP_DIR="$INSTALL_DIR.backup.$(date +%Y%m%d_%H%M%S)"
+    mv "$INSTALL_DIR" "$BACKUP_DIR"
+    echo -e "${GREEN}✓ Backup created at: $BACKUP_DIR${NC}"
+fi
+
+# Create installation directory
+mkdir -p "$INSTALL_DIR"
+
+# Download and extract repository
+echo -e "\n${BLUE}Downloading Addarr...${NC}"
+TMP_ZIP="/tmp/addarr.zip"
+if ! curl -L "https://github.com/cyneric/addarr/archive/main.zip" -o "$TMP_ZIP"; then
+    echo -e "${RED}Failed to download repository${NC}"
+    exit 1
+fi
+
+echo -e "${BLUE}Extracting files...${NC}"
+if ! unzip -q "$TMP_ZIP" -d "/tmp"; then
+    echo -e "${RED}Failed to extract files${NC}"
+    rm -f "$TMP_ZIP"
+    exit 1
+fi
+
+# Move files to installation directory
+mv /tmp/addarr-main/* "$INSTALL_DIR/"
+mv /tmp/addarr-main/.* "$INSTALL_DIR/" 2>/dev/null || true
+
+# Cleanup
+rm -f "$TMP_ZIP"
+rm -rf "/tmp/addarr-main"
+
 # Create necessary directories
 echo -e "\n${BLUE}Creating directory structure...${NC}"
-progress "Creating logs directory" "mkdir -p logs"
-progress "Creating data directory" "mkdir -p data"
-progress "Creating backup directory" "mkdir -p backup"
+progress "Creating logs directory" "mkdir -p $INSTALL_DIR/logs"
+progress "Creating data directory" "mkdir -p $INSTALL_DIR/data"
+progress "Creating backup directory" "mkdir -p $INSTALL_DIR/backup"
 
-# Create config from example if it doesn't exist
-if [ ! -f config.yaml ]; then
-    echo -e "\n${YELLOW}No config.yaml found. Creating from example...${NC}"
-    if [ -f config_example.yaml ]; then
-        progress "Creating config.yaml" "cp config_example.yaml config.yaml"
-        echo -e "${GREEN}✓ Created config.yaml${NC}"
-        echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
-    else
-        # Download example config if not present
-        echo -e "${YELLOW}Downloading example config...${NC}"
-        curl -sSL https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml -o config.yaml
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✓ Created config.yaml${NC}"
-            echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
-        else
-            echo -e "${RED}✗ Failed to download example config${NC}"
-        fi
-    fi
+# Create config from example
+if [ ! -f "$INSTALL_DIR/config.yaml" ] && [ -f "$INSTALL_DIR/config_example.yaml" ]; then
+    echo -e "\n${YELLOW}Creating config from example...${NC}"
+    progress "Creating config.yaml" "cp $INSTALL_DIR/config_example.yaml $INSTALL_DIR/config.yaml"
+    echo -e "${GREEN}✓ Created config.yaml${NC}"
+    echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
+fi
+
+# Create command shortcut
+SHORTCUT_DIR="$HOME/.local/bin"
+mkdir -p "$SHORTCUT_DIR"
+
+echo -e "\n${BLUE}Creating command shortcut...${NC}"
+cat >"$SHORTCUT_DIR/addarr" <<EOF
+#!/bin/bash
+cd "$INSTALL_DIR"
+$PYTHON_CMD run.py "\$@"
+EOF
+
+chmod +x "$SHORTCUT_DIR/addarr"
+
+# Add to PATH if needed
+if [[ ":$PATH:" != *":$SHORTCUT_DIR:"* ]]; then
+    echo -e "\n${YELLOW}Adding $SHORTCUT_DIR to PATH...${NC}"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$HOME/.bashrc"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$HOME/.profile"
 fi
 
 echo -e "\n${GREEN}Installation completed!${NC}"
 echo -e "\n${BLUE}Starting setup wizard...${NC}"
 
+# Determine the correct Python command
+get_python_cmd() {
+    if command -v python3 >/dev/null 2>&1; then
+        echo "python3"
+    elif command -v python >/dev/null 2>&1; then
+        echo "python"
+    else
+        echo ""
+    fi
+}
+
+# Determine the correct pip command
+get_pip_cmd() {
+    if command -v pip3 >/dev/null 2>&1; then
+        echo "pip3"
+    elif command -v pip >/dev/null 2>&1; then
+        echo "pip"
+    else
+        echo ""
+    fi
+}
+
+# Get system information
+get_system_info() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    else
+        echo "unknown"
+    fi
+}
+
+# Install Python if needed
+install_python() {
+    local system=$(get_system_info)
+
+    case "$system" in
+    "ubuntu" | "debian")
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip
+        ;;
+    "fedora")
+        sudo dnf install -y python3 python3-pip
+        ;;
+    "rhel" | "centos")
+        sudo yum install -y python3 python3-pip
+        ;;
+    "arch")
+        sudo pacman -S --noconfirm python python-pip
+        ;;
+    "macos")
+        if ! command -v brew >/dev/null 2>&1; then
+            echo -e "${RED}Homebrew is required for macOS installation.${NC}"
+            echo -e "Install from: https://brew.sh"
+            exit 1
+        fi
+        brew install python
+        ;;
+    *)
+        echo -e "${RED}Unsupported system: $system${NC}"
+        echo -e "Please install Python 3.8+ manually and try again."
+        exit 1
+        ;;
+    esac
+}
+
+# Get Python command
+PYTHON_CMD=$(get_python_cmd)
+if [ -z "$PYTHON_CMD" ]; then
+    echo -e "${YELLOW}Python not found. Attempting to install...${NC}"
+    install_python
+    PYTHON_CMD=$(get_python_cmd)
+    if [ -z "$PYTHON_CMD" ]; then
+        echo -e "${RED}Failed to install Python. Please install Python 3.8+ manually and try again.${NC}"
+        exit 1
+    fi
+fi
+
 # Start the setup wizard
-python run.py --setup
+if ! $PYTHON_CMD run.py --setup; then
+    echo -e "${RED}Failed to start setup wizard.${NC}"
+    echo -e "${YELLOW}You can run it manually later with: $PYTHON_CMD run.py --setup${NC}"
+    exit 1
+fi
