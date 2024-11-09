@@ -242,6 +242,44 @@ fi
 # Create installation directory
 mkdir -p "$INSTALL_DIR"
 
+# Check for unzip
+if ! command -v unzip >/dev/null 2>&1; then
+    echo -e "${RED}Error: 'unzip' is not installed${NC}"
+    echo -e "${YELLOW}Please install unzip using one of these methods:${NC}\n"
+    
+    case "$(uname -s)" in
+    Linux*)
+        if command -v apt-get >/dev/null 2>&1; then
+            echo "For Debian/Ubuntu:"
+            echo "  sudo apt update"
+            echo "  sudo apt install unzip"
+        elif command -v dnf >/dev/null 2>&1; then
+            echo "For Fedora:"
+            echo "  sudo dnf install unzip"
+        elif command -v pacman >/dev/null 2>&1; then
+            echo "For Arch Linux:"
+            echo "  sudo pacman -S unzip"
+        elif command -v yum >/dev/null 2>&1; then
+            echo "For CentOS/RHEL:"
+            echo "  sudo yum install unzip"
+        fi
+        ;;
+    Darwin*)
+        echo "Using Homebrew:"
+        echo "  brew install unzip"
+        ;;
+    MINGW*|CYGWIN*|MSYS*)
+        echo "Using Chocolatey:"
+        echo "  choco install unzip"
+        echo -e "\nOr download from:"
+        echo "  http://gnuwin32.sourceforge.net/packages/unzip.htm"
+        ;;
+    esac
+    
+    echo -e "\n${YELLOW}Please install unzip and run this script again.${NC}"
+    exit 1
+fi
+
 # Download and extract repository
 echo -e "\n${BLUE}Downloading Addarr...${NC}"
 TMP_ZIP="/tmp/addarr.zip"
