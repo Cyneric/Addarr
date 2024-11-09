@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Filename: install.sh
+# Author: Christian Blank (https://github.com/cyneric)
+# Created Date: 2024-11-08
+# Description: Bash installer script for Addarr, a Media Management Telegram Bot.
+# License: MIT
+
 # ANSI color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
