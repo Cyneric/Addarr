@@ -108,9 +108,9 @@ if ! check_python_version; then
     Linux*)
         echo "For Debian/Ubuntu:"
         echo "  sudo apt update"
-        echo "  sudo apt install python3 python3-pip python3-venv"
+        echo "  sudo apt install python3 python3-pip"
         echo -e "\nFor Fedora:"
-        echo "  sudo dnf install python3 python3-pip python3-venv"
+        echo "  sudo dnf install python3 python3-pip"
         echo -e "\nFor Arch Linux:"
         echo "  sudo pacman -S python python-pip"
         ;;
@@ -190,17 +190,6 @@ else
     echo -e "${BLUE}pip version is up to date${NC}"
 fi
 
-# Create virtual environment
-echo -e "\n${BLUE}Setting up virtual environment...${NC}"
-progress "Creating virtual environment" "$PYTHON_CMD -m venv venv"
-
-# Activate virtual environment
-echo -e "\n${BLUE}Activating virtual environment...${NC}"
-source venv/bin/activate || {
-    echo -e "${RED}Failed to activate virtual environment${NC}"
-    exit 1
-}
-
 # Install requirements
 echo -e "\n${BLUE}Installing dependencies...${NC}"
 if ! run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Installing required packages" true; then
@@ -231,11 +220,7 @@ if [ ! -f config.yaml ]; then
 fi
 
 echo -e "\n${GREEN}Installation completed!${NC}"
-echo -e "\nTo start Addarr:"
-echo -e "1. Activate the virtual environment:"
-echo -e "   ${BLUE}source venv/bin/activate${NC}"
-echo -e "2. Run the setup wizard:"
-echo -e "   ${BLUE}python run.py --setup${NC}"
-echo -e "3. Start the bot:"
-echo -e "   ${BLUE}python run.py${NC}"
-echo -e "\n${YELLOW}For more information, visit: https://github.com/cyneric/addarr/wiki${NC}"
+echo -e "\n${BLUE}Starting setup wizard...${NC}"
+
+# Start the setup wizard
+python run.py --setup
