@@ -25,7 +25,30 @@ APP_CONFIG_DIR="$XDG_CONFIG_HOME/addarr"
 APP_CACHE_DIR="$XDG_CACHE_HOME/addarr"
 
 # Source directory (where the script is running from)
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -n "${BASH_SOURCE[0]}" ]; then
+    SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+else
+    # When script is piped to bash, try to download files directly
+    SOURCE_DIR=$(mktemp -d)
+    echo -e "${BLUE}Downloading Addarr files...${NC}"
+
+    # Download required files
+    wget -q https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt -O "$SOURCE_DIR/requirements.txt"
+
+    # Create src directory and download main files
+    mkdir -p "$SOURCE_DIR/src"
+    wget -q https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py -O "$SOURCE_DIR/src/run.py"
+
+    # Download config example
+    wget -q https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml -O "$SOURCE_DIR/config_example.yaml"
+
+    # Check if downloads were successful
+    if [ ! -f "$SOURCE_DIR/requirements.txt" ] || [ ! -f "$SOURCE_DIR/src/run.py" ] || [ ! -f "$SOURCE_DIR/config_example.yaml" ]; then
+        echo -e "${RED}Failed to download required files${NC}"
+        rm -rf "$SOURCE_DIR"
+        exit 1
+    fi
+fi
 
 # Spinner function
 spinner() {
@@ -223,19 +246,11 @@ create_xdg_dirs() {
 install_app_files() {
     echo -e "\n${BLUE}Installing Addarr...${NC}"
 
-    # First verify source files exist
-    if [ ! -d "$SOURCE_DIR/src" ]; then
-        echo -e "${RED}Error: Source directory not found at $SOURCE_DIR/src${NC}"
-        return 1
-    fi
-
-    if [ ! -f "$SOURCE_DIR/requirements.txt" ]; then
-        echo -e "${RED}Error: requirements.txt not found at $SOURCE_DIR/requirements.txt${NC}"
-        return 1
-    fi
+    # Create src directory if it doesn't exist
+    mkdir -p "$APP_DATA_DIR/src"
 
     # Copy application files
-    progress "Copying application files" "cp -r \"$SOURCE_DIR/src\" \"$APP_DATA_DIR/\""
+    progress "Copying application files" "cp -r \"$SOURCE_DIR/src\"/* \"$APP_DATA_DIR/src/\""
     progress "Copying requirements.txt" "cp \"$SOURCE_DIR/requirements.txt\" \"$APP_DATA_DIR/\""
 
     # Create run script
@@ -266,7 +281,7 @@ setup_configuration() {
 echo -e "${BLUE}
 ╔═══════════════════════════════════════╗
 ║           Addarr Installer            ║
-║     Media Management Telegram Bot     ║
+��     Media Management Telegram Bot     ║
 ╚═══════════════════════════════════════╝${NC}"
 
 # Check Python and pip versions (keep existing checks)
