@@ -120,7 +120,7 @@ class StartHandler:
                 
             # Edit the message to show cancellation
             await query.message.edit_text(
-                self.translation.get_text("messages.Canceled")
+                self.translation.get_text("Canceled")
             )
             return ConversationHandler.END
             
