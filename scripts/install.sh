@@ -47,7 +47,12 @@ check_python_version() {
     fi
 
     PYTHON_VERSION=$($PYTHON_CMD -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-    if version_compare "$PYTHON_VERSION" "$MIN_PYTHON_VERSION"; then
+
+    # Simple version comparison - convert to comparable numbers
+    current_ver=$(echo "$PYTHON_VERSION" | sed 's/\.//g')
+    min_ver=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//g')
+
+    if [ "$current_ver" -ge "$min_ver" ]; then
         echo -e "${GREEN}✓ Python $PYTHON_VERSION detected${NC}"
         return 0
     else
