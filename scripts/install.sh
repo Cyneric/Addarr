@@ -46,6 +46,9 @@ progress() {
 # Minimum required Python version
 MIN_PYTHON_VERSION="3.8"
 
+# Minimum required pip version
+MIN_PIP_VERSION="20.0" # Example minimum version
+
 echo -e "${BLUE}
 ╔═══════════════════════════════════════╗
 ║           Addarr Installer            ║
@@ -77,6 +80,21 @@ check_python_version() {
         return 0
     else
         echo -e "${RED}✗ Python $PYTHON_VERSION detected, but version $MIN_PYTHON_VERSION or higher is required${NC}"
+        return 1
+    fi
+}
+
+# Function to check pip version
+check_pip_version() {
+    local pip_version=$(pip --version | awk '{print $2}')
+    local current_ver=$(echo "$pip_version" | sed 's/\.//g')
+    local min_ver=$(echo "$MIN_PIP_VERSION" | sed 's/\.//g')
+
+    if [ "$current_ver" -ge "$min_ver" ]; then
+        echo -e "${GREEN}✓ pip $pip_version detected${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}⚠️ pip $pip_version detected, version $MIN_PIP_VERSION or higher recommended${NC}"
         return 1
     fi
 }
@@ -114,6 +132,21 @@ if ! check_python_version; then
     exit 1
 fi
 
+# Check pip version and only upgrade if needed
+if ! check_pip_version; then
+    if [ "$SKIP_PIP_UPGRADE" != "true" ]; then
+        echo -e "${YELLOW}Would you like to upgrade pip? [y/N]${NC}"
+        read -r response
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            progress "Upgrading pip" "pip install --upgrade pip > /dev/null 2>&1"
+        else
+            echo -e "${BLUE}Skipping pip upgrade${NC}"
+        fi
+    fi
+else
+    echo -e "${BLUE}pip version is up to date${NC}"
+fi
+
 # Create virtual environment
 echo -e "\n${BLUE}Setting up virtual environment...${NC}"
 progress "Creating virtual environment" "$PYTHON_CMD -m venv venv"
@@ -124,9 +157,6 @@ source venv/bin/activate || {
     echo -e "${RED}Failed to activate virtual environment${NC}"
     exit 1
 }
-
-# Upgrade pip
-progress "Upgrading pip" "pip install --upgrade pip > /dev/null 2>&1"
 
 # Install requirements
 echo -e "\n${BLUE}Installing dependencies...${NC}"
