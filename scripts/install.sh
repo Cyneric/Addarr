@@ -330,6 +330,43 @@ else
     echo -e "${BLUE}pip version is up to date${NC}"
 fi
 
+# Function to check if git is installed
+check_git() {
+    if ! command -v git >/dev/null 2>&1; then
+        echo -e "${YELLOW}Git is not installed. Installing git...${NC}"
+        case "$(get_system_info)" in
+            "ubuntu"|"debian")
+                sudo apt-get update && sudo apt-get install -y git
+                ;;
+            "fedora")
+                sudo dnf install -y git
+                ;;
+            "rhel"|"centos")
+                sudo yum install -y git
+                ;;
+            "arch")
+                sudo pacman -S --noconfirm git
+                ;;
+            "macos")
+                if command -v brew >/dev/null 2>&1; then
+                    brew install git
+                else
+                    echo -e "${RED}Homebrew is required for macOS installation.${NC}"
+                    echo -e "Install from: https://brew.sh"
+                    exit 1
+                fi
+                ;;
+            *)
+                echo -e "${RED}Please install git manually and try again${NC}"
+                exit 1
+                ;;
+        esac
+    fi
+}
+
+# Check and install git if needed
+check_git
+
 # Create installation directory if it doesn't exist
 INSTALL_DIR="$HOME/.addarr"
 echo -e "\n${BLUE}Installing Addarr to: $INSTALL_DIR${NC}"
@@ -348,137 +385,15 @@ if [ -d "$INSTALL_DIR" ]; then
     echo -e "${GREEN}✓ Backup created at: $BACKUP_DIR${NC}"
 fi
 
-# Create installation directory
-mkdir -p "$INSTALL_DIR"
-
-# Function to format size in human-readable format
-format_size() {
-    local bytes=$1
-    if [ $bytes -gt 1073741824 ]; then
-        echo "$(awk "BEGIN {printf \"%.1f\", $bytes/1073741824}") GB"
-    elif [ $bytes -gt 1048576 ]; then
-        echo "$(awk "BEGIN {printf \"%.1f\", $bytes/1048576}") MB"
-    elif [ $bytes -gt 1024 ]; then
-        echo "$(awk "BEGIN {printf \"%.1f\", $bytes/1024}") KB"
-    else
-        echo "$bytes B"
-    fi
-}
-
-# Function to download with progress bar
-download_with_progress() {
-    local url="$1"
-    local output_file="$2"
-    local title="$3"
-
-    # Create a temporary file for progress output
-    local tmp_progress="/tmp/curl_progress.$$"
-
-    # Start curl in the background with progress to temp file
-    (curl -L --progress-bar "$url" -o "$output_file" 2>"$tmp_progress") &
-    local curl_pid=$!
-
-    echo -e "${BLUE}${title}...${NC}"
-    
-    # Variables for progress calculation
-    local downloaded=0
-    local total_size=0
-    local percentage=0
-    local bar_size=40
-    local progress_chars=""
-
-    # Update progress while curl is running
-    while kill -0 $curl_pid 2>/dev/null; do
-        if [ -f "$tmp_progress" ]; then
-            # Parse curl's progress output
-            local curl_output=$(tail -n 1 "$tmp_progress")
-            if [[ $curl_output =~ [0-9]+/([0-9]+) ]]; then
-                downloaded=$(echo "$curl_output" | grep -o '[0-9]*' | head -1)
-                total_size=$(echo "$curl_output" | grep -o '[0-9]*' | tail -1)
-                
-                if [ $total_size -gt 0 ]; then
-                    percentage=$((downloaded * 100 / total_size))
-                    filled_length=$((percentage * bar_size / 100))
-                    unfilled_length=$((bar_size - filled_length))
-                    
-                    # Create progress bar
-                    progress_chars=""
-                    for ((i=0; i<filled_length; i++)); do progress_chars+="█"; done
-                    for ((i=0; i<unfilled_length; i++)); do progress_chars+="░"; done
-                    
-                    # Clear line and show progress
-                    echo -ne "\r\033[K"
-                    echo -ne "${BLUE}Progress: ${NC}[${GREEN}${progress_chars}${NC}] "
-                    echo -ne "${YELLOW}${percentage}%${NC} "
-                    echo -ne "($(format_size $downloaded)/$(format_size $total_size))"
-                fi
-            fi
-        fi
-        sleep 0.1
-    done
-
-    # Wait for curl to finish and get its exit status
-    wait $curl_pid
-    local exit_status=$?
-
-    # Clean up
-    rm -f "$tmp_progress"
-
-    # Final newline
-    echo
-
-    return $exit_status
-}
-
-# Replace the existing download section with this:
-echo -e "\n${BLUE}Downloading Addarr...${NC}"
-TMP_ZIP="/tmp/addarr.zip"
-if ! download_with_progress "https://github.com/Cyneric/Addarr/archive/refs/heads/main.zip" "$TMP_ZIP" "Downloading repository"; then
-    echo -e "${RED}Failed to download repository${NC}"
+# Clone repository with progress
+echo -e "\n${BLUE}Cloning Addarr repository...${NC}"
+if ! git clone --progress https://github.com/Cyneric/Addarr.git "$INSTALL_DIR" 2>&1 | while read -r line; do
+    echo -ne "\r\033[K${BLUE}Progress: ${NC}$line"
+done; then
+    echo -e "\n${RED}Failed to clone repository${NC}"
     exit 1
 fi
-
-echo -e "${BLUE}Extracting files...${NC}"
-if ! unzip -o -q "$TMP_ZIP" -d "/tmp"; then
-    echo -e "${RED}Failed to extract files${NC}"
-    rm -f "$TMP_ZIP"
-    exit 1
-fi
-
-# Find the correct directory name
-EXTRACTED_DIR=$(find /tmp -maxdepth 1 -type d -name "Addarr-*" -print -quit)
-if [ -z "$EXTRACTED_DIR" ]; then
-    echo -e "${RED}Could not find extracted directory${NC}"
-    rm -f "$TMP_ZIP"
-    exit 1
-fi
-
-# Move files to installation directory (force overwrite)
-echo -e "${BLUE}Installing files...${NC}"
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
-if ! cp -rf "$EXTRACTED_DIR"/* "$INSTALL_DIR/"; then
-    echo -e "${RED}Failed to copy files${NC}"
-    rm -f "$TMP_ZIP"
-    rm -rf "$EXTRACTED_DIR"
-    exit 1
-fi
-
-# Copy hidden files (if any)
-cp -rf "$EXTRACTED_DIR"/.[!.]* "$INSTALL_DIR/" 2>/dev/null || true
-
-# Cleanup
-rm -f "$TMP_ZIP"
-rm -rf "$EXTRACTED_DIR"
-
-# Verify requirements.txt exists
-if [ ! -f "$INSTALL_DIR/requirements.txt" ]; then
-    echo -e "${RED}Error: requirements.txt not found in installation directory${NC}"
-    echo -e "${BLUE}Contents of $INSTALL_DIR:${NC}"
-    ls -la "$INSTALL_DIR"
-    exit 1
-fi
+echo -e "\n${GREEN}✓ Repository cloned successfully${NC}"
 
 # Create necessary directories
 echo -e "\n${BLUE}Creating directory structure...${NC}"
@@ -657,10 +572,6 @@ if [[ ":$PATH:" != *":$SHORTCUT_DIR:"* ]]; then
 fi
 
 cleanup() {
-    # Remove temporary files
-    rm -f "$TMP_ZIP" 2>/dev/null
-    rm -rf "$EXTRACTED_DIR" 2>/dev/null
-    
     # If installation failed, restore backup if it exists
     if [ "$1" = "error" ] && [ -d "$BACKUP_DIR" ]; then
         echo -e "${YELLOW}Restoring backup...${NC}"
