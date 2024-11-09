@@ -39,7 +39,6 @@ addarr/
 │   │   ├── __init__.py
 │   │   ├── media.py      # Media service orchestration
 │   │   ├── health.py     # Health monitoring service
-│   │   ├── cache.py      # Caching service
 │   │   ├── scheduler.py  # Job scheduling service
 │   │   ├── translation.py # Translation service
 │   │   ├── notification.py # Notification service
@@ -58,11 +57,6 @@ addarr/
 │   │   ├── helpers.py    # General helper functions
 │   │   ├── prerun.py     # Pre-run checks
 │   │   └── validate_translations.py # Translation validation
-│   │
-│   ├── jobs/             # Scheduled jobs and tasks
-│   │   ├── __init__.py
-│   │   ├── health.py     # Health check job
-│   │   └── maintenance.py # Maintenance tasks
 │   │
 │   ├── models/           # Data models and types
 │   │   ├── __init__.py
