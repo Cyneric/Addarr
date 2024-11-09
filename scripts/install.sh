@@ -223,14 +223,26 @@ create_xdg_dirs() {
 install_app_files() {
     echo -e "\n${BLUE}Installing Addarr...${NC}"
 
+    # First verify source files exist
+    if [ ! -d "$SOURCE_DIR/src" ]; then
+        echo -e "${RED}Error: Source directory not found at $SOURCE_DIR/src${NC}"
+        return 1
+    fi
+
+    if [ ! -f "$SOURCE_DIR/requirements.txt" ]; then
+        echo -e "${RED}Error: requirements.txt not found at $SOURCE_DIR/requirements.txt${NC}"
+        return 1
+    fi
+
     # Copy application files
-    progress "Copying application files" "cp -r \"$SOURCE_DIR/src\"/* \"$APP_DATA_DIR/\""
+    progress "Copying application files" "cp -r \"$SOURCE_DIR/src\" \"$APP_DATA_DIR/\""
     progress "Copying requirements.txt" "cp \"$SOURCE_DIR/requirements.txt\" \"$APP_DATA_DIR/\""
 
     # Create run script
     cat >"$XDG_BIN_HOME/addarr" <<EOF
 #!/bin/bash
-PYTHONPATH="$APP_DATA_DIR" python3 "$APP_DATA_DIR/run.py" "\$@"
+cd "$APP_DATA_DIR"
+PYTHONPATH="$APP_DATA_DIR" python3 "$APP_DATA_DIR/src/run.py" "\$@"
 EOF
     progress "Setting executable permissions" "chmod +x \"$XDG_BIN_HOME/addarr\""
 }
@@ -244,7 +256,8 @@ setup_configuration() {
             echo -e "${GREEN}✓ Created config.yaml${NC}"
             echo -e "${YELLOW}Please edit $APP_CONFIG_DIR/config.yaml with your settings${NC}"
         else
-            echo -e "${RED}✗ config_example.yaml not found${NC}"
+            echo -e "${RED}✗ config_example.yaml not found at $SOURCE_DIR/config_example.yaml${NC}"
+            return 1
         fi
     fi
 }
@@ -264,6 +277,11 @@ create_xdg_dirs
 
 # Install requirements
 echo -e "\n${BLUE}Installing dependencies...${NC}"
+if [ ! -f "$SOURCE_DIR/requirements.txt" ]; then
+    echo -e "${RED}Error: requirements.txt not found at $SOURCE_DIR/requirements.txt${NC}"
+    exit 1
+fi
+
 if ! run_with_timeout "pip install --user -r \"$SOURCE_DIR/requirements.txt\"" $INSTALL_TIMEOUT "Installing required packages" true; then
     echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
     echo -e "${YELLOW}Would you like to retry with more detailed console output? [Y/n]${NC}"
