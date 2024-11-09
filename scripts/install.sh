@@ -1,17 +1,41 @@
 #!/bin/bash
 
-# Filename: install.sh
-# Author: Christian Blank (https://github.com/cyneric)
-# Created Date: 2024-11-08
-# Description: Bash installer script for Addarr.
-# License: MIT
-
 # ANSI color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Spinner function
+spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        printf "\b\b\b\b\b\b"
+        sleep $delay
+    done
+    printf "    \b\b\b\b"
+}
+
+# Progress message with spinner
+progress() {
+    local message=$1
+    local command=$2
+    echo -ne "${BLUE}${message}...${NC}"
+    eval $command &
+    spinner $!
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓${NC}"
+    else
+        echo -e "${RED}✗${NC}"
+        return 1
+    fi
+}
 
 # Minimum required Python version
 MIN_PYTHON_VERSION="3.8"
@@ -24,16 +48,6 @@ echo -e "${BLUE}
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
-}
-
-# Function to compare version numbers
-version_compare() {
-    # Returns true if $1 (current version) is greater than or equal to $2 (minimum version)
-    if [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]; then
-        return 0 # Success - current version is >= minimum
-    else
-        return 1 # Failure - current version is < minimum
-    fi
 }
 
 # Function to check Python version
@@ -94,77 +108,35 @@ if ! check_python_version; then
     exit 1
 fi
 
-# Check for pip
-if ! command_exists pip3 && ! command_exists pip; then
-    echo -e "${RED}✗ pip not found${NC}"
-    echo -e "${YELLOW}Installing pip...${NC}"
-
-    case "$(uname -s)" in
-    Linux*)
-        sudo apt update && sudo apt install python3-pip ||
-            sudo dnf install python3-pip ||
-            sudo pacman -S python-pip
-        ;;
-    Darwin*)
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        python3 get-pip.py
-        rm get-pip.py
-        ;;
-    *)
-        echo -e "${RED}Please install pip manually and run this script again.${NC}"
-        exit 1
-        ;;
-    esac
-fi
-
-# Check for venv module
-if ! $PYTHON_CMD -c "import venv" 2>/dev/null; then
-    echo -e "${RED}✗ venv module not found${NC}"
-    echo -e "${YELLOW}Installing venv...${NC}"
-
-    case "$(uname -s)" in
-    Linux*)
-        sudo apt update && sudo apt install python3-venv ||
-            sudo dnf install python3-venv ||
-            sudo pacman -S python-virtualenv
-        ;;
-    *)
-        echo -e "${RED}Please install the venv module manually and run this script again.${NC}"
-        exit 1
-        ;;
-    esac
-fi
-
 # Create virtual environment
-echo -e "\n${BLUE}Creating virtual environment...${NC}"
-$PYTHON_CMD -m venv venv
+echo -e "\n${BLUE}Setting up virtual environment...${NC}"
+progress "Creating virtual environment" "$PYTHON_CMD -m venv venv"
 
 # Activate virtual environment
-echo -e "${BLUE}Activating virtual environment...${NC}"
+echo -e "\n${BLUE}Activating virtual environment...${NC}"
 source venv/bin/activate || {
     echo -e "${RED}Failed to activate virtual environment${NC}"
     exit 1
 }
 
 # Upgrade pip
-echo -e "${BLUE}Upgrading pip...${NC}"
-pip install --upgrade pip
+progress "Upgrading pip" "pip install --upgrade pip > /dev/null 2>&1"
 
 # Install requirements
-echo -e "${BLUE}Installing requirements...${NC}"
-pip install -r requirements.txt
+echo -e "\n${BLUE}Installing dependencies...${NC}"
+progress "Installing required packages" "pip install -r requirements.txt > /dev/null 2>&1"
 
 # Create necessary directories
-echo -e "${BLUE}Creating necessary directories...${NC}"
-mkdir -p logs
-mkdir -p data
-mkdir -p backup
+echo -e "\n${BLUE}Creating directory structure...${NC}"
+progress "Creating logs directory" "mkdir -p logs"
+progress "Creating data directory" "mkdir -p data"
+progress "Creating backup directory" "mkdir -p backup"
 
 # Check if config.yaml exists
 if [ ! -f config.yaml ]; then
-    echo -e "${YELLOW}No config.yaml found. Creating from example...${NC}"
+    echo -e "\n${YELLOW}No config.yaml found. Creating from example...${NC}"
     if [ -f config_example.yaml ]; then
-        cp config_example.yaml config.yaml
+        progress "Creating config.yaml" "cp config_example.yaml config.yaml"
         echo -e "${GREEN}✓ Created config.yaml${NC}"
         echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
     else
