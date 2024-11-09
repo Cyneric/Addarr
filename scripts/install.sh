@@ -228,17 +228,6 @@ else
     echo -e "${BLUE}pip version is up to date${NC}"
 fi
 
-# Install requirements
-echo -e "\n${BLUE}Installing dependencies...${NC}"
-if ! run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Installing required packages" true; then
-    echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
-    echo -e "${YELLOW}Would you like to retry with more detailed console output? [Y/n]${NC}"
-    read -r response
-    if [[ ! "$response" =~ ^([nN][oO]|[nN])$ ]]; then
-        run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Retrying installation" false
-    fi
-fi
-
 # Create installation directory if it doesn't exist
 INSTALL_DIR="$HOME/.addarr"
 echo -e "\n${BLUE}Installing Addarr to: $INSTALL_DIR${NC}"
@@ -262,15 +251,17 @@ if ! curl -L "https://github.com/cyneric/addarr/archive/main.zip" -o "$TMP_ZIP";
 fi
 
 echo -e "${BLUE}Extracting files...${NC}"
-if ! unzip -q "$TMP_ZIP" -d "/tmp"; then
+if ! unzip -o -q "$TMP_ZIP" -d "/tmp"; then
     echo -e "${RED}Failed to extract files${NC}"
     rm -f "$TMP_ZIP"
     exit 1
 fi
 
-# Move files to installation directory
-mv /tmp/addarr-main/* "$INSTALL_DIR/"
-mv /tmp/addarr-main/.* "$INSTALL_DIR/" 2>/dev/null || true
+# Move files to installation directory (force overwrite)
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+cp -rf /tmp/addarr-main/* "$INSTALL_DIR/"
+cp -rf /tmp/addarr-main/.* "$INSTALL_DIR/" 2>/dev/null || true
 
 # Cleanup
 rm -f "$TMP_ZIP"
@@ -295,10 +286,13 @@ SHORTCUT_DIR="$HOME/.local/bin"
 mkdir -p "$SHORTCUT_DIR"
 
 echo -e "\n${BLUE}Creating command shortcut...${NC}"
-cat >"$SHORTCUT_DIR/addarr" <<EOF
+cat >"$SHORTCUT_DIR/addarr" <<'EOF'
 #!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+INSTALL_DIR="$HOME/.addarr"
+source "$INSTALL_DIR/venv/bin/activate"
 cd "$INSTALL_DIR"
-$PYTHON_CMD run.py "\$@"
+python run.py "$@"
 EOF
 
 chmod +x "$SHORTCUT_DIR/addarr"
@@ -395,6 +389,31 @@ if [ -z "$PYTHON_CMD" ]; then
         echo -e "${RED}Failed to install Python. Please install Python 3.8+ manually and try again.${NC}"
         exit 1
     fi
+fi
+
+# Create and activate virtual environment
+echo -e "\n${BLUE}Creating virtual environment...${NC}"
+if ! $PYTHON_CMD -m venv "$INSTALL_DIR/venv"; then
+    echo -e "${RED}Failed to create virtual environment. Please install python3-venv:${NC}"
+    echo "sudo apt install python3-venv"
+    exit 1
+fi
+
+# Activate virtual environment
+source "$INSTALL_DIR/venv/bin/activate"
+
+# Update pip in virtual environment
+echo -e "\n${BLUE}Updating pip in virtual environment...${NC}"
+if ! "$INSTALL_DIR/venv/bin/pip" install --upgrade pip; then
+    echo -e "${RED}Failed to upgrade pip in virtual environment${NC}"
+    exit 1
+fi
+
+# Install requirements
+echo -e "\n${BLUE}Installing dependencies...${NC}"
+if ! "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"; then
+    echo -e "${RED}Failed to install dependencies${NC}"
+    exit 1
 fi
 
 # Start the setup wizard
