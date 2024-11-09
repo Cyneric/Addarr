@@ -298,14 +298,6 @@ progress "Creating logs directory" "mkdir -p $INSTALL_DIR/logs"
 progress "Creating data directory" "mkdir -p $INSTALL_DIR/data"
 progress "Creating backup directory" "mkdir -p $INSTALL_DIR/backup"
 
-# Create config from example
-if [ ! -f "$INSTALL_DIR/config.yaml" ] && [ -f "$INSTALL_DIR/config_example.yaml" ]; then
-    echo -e "\n${YELLOW}Creating config from example...${NC}"
-    progress "Creating config.yaml" "cp $INSTALL_DIR/config_example.yaml $INSTALL_DIR/config.yaml"
-    echo -e "${GREEN}✓ Created config.yaml${NC}"
-    echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
-fi
-
 # Create command shortcut
 SHORTCUT_DIR="$HOME/.local/bin"
 mkdir -p "$SHORTCUT_DIR"
@@ -443,7 +435,7 @@ fi
 
 # Installation Summary
 echo -e "\n${GREEN}╔═══════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║         Installation Complete! 🎉      ║${NC}"
+echo -e "${GREEN}║         Installation Complete! 🎉     ║${NC}"
 echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}\n"
 
 echo -e "${BLUE}📂 Installation Details:${NC}"
