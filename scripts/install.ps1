@@ -159,7 +159,7 @@ python "$INSTALL_DIR\run.py"
 Write-Host "`nInstallation complete!" -ForegroundColor $colors.Green
 Write-Host "`nTo get started:" -ForegroundColor $colors.Yellow
 Write-Host "1. Run initial setup:" -NoNewline
-Write-Host " addarr --setup" -ForegroundColor $colors.Blue
+Write-Host " addarr (on first run, setup wizard will start automatically)" -ForegroundColor $colors.Blue
 if ($installService -ne 'y' -and $installService -ne 'Y') {
     Write-Host "2. Start the bot:" -NoNewline
     Write-Host " addarr" -ForegroundColor $colors.Blue

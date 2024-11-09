@@ -272,7 +272,7 @@ The linux/macOS installer will:
 - Back up any existing installation
 
 After installation:
-1. Run `addarr --setup` to configure the bot
+1. Run `addarr` (on first run, setup wizard will start automatically)
 2. Run `addarr` to start the bot
 
 #### Windows
@@ -290,7 +290,7 @@ The windows installer will:
 - Back up any existing installation
 
 After installation:
-1. Run `addarr --setup` to configure the bot
+1. Run `addarr` (on first run, setup wizard will start automatically)
 2. Run `addarr` to start the bot
 
 
@@ -414,11 +414,8 @@ After installation:
 The bot can be controlled through various command-line options:
 
 ```bash
-# Normal startup
+# Normal startup (on first run, setup wizard will start automatically)
 python run.py
-
-# Run the interactive setup wizard
-python run.py --setup
 
 # Reset the configuration and start from scratch
 python run.py --reset
@@ -440,7 +437,7 @@ python run.py --help
 ```
 
 #### Command Details
-- `--setup`: Launches the interactive setup wizard to create a new configuration from scratch
+- `--setup`: Launches the interactive setup wizard to create a new configuration
 - `--reset`: Creates a backup of the existing configuration in the backup directory and starts fresh setup
 - `--backup`: Creates a timestamped backup of the current configuration in the backup directory
 - `--check`: Displays the current status of all configured services

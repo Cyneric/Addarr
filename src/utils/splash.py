@@ -80,8 +80,8 @@ def show_welcome_screen():
     print(f"• 🌐 Language: {language}")
     
     print(f"\n{Fore.YELLOW}💻 Command Line Interface:{Style.RESET_ALL}")
-    print("• 🚀 python run.py - Start the bot normally")
-    print("• 🔧 python run.py --setup - Run initial setup wizard")
+    print("• 🚀 python run.py - Start the bot normally (on first run, setup wizard will start automatically)")
+    print("• 🔧 python run.py --setup - Run setup wizard again")
     print("• ⚙️ python run.py --configure - Add/modify services")
     print("• ✅ python run.py --check - Show configuration status")
     print("• ℹ️ python run.py --version - Show version info")
