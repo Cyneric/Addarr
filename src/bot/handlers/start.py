@@ -136,10 +136,18 @@ class StartHandler:
                 "music": self.translation.get_text("Title", subject="Music")
             }
             
-            cancel_hint = self.translation.get_text("messages.CancelHint", default="(Use /cancel to cancel)")
+            # Create keyboard with cancel button
+            keyboard = [
+                [InlineKeyboardButton(
+                    f"❌ {self.translation.get_text('Cancel')}", 
+                    callback_data="menu_cancel"
+                )]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
             
             await query.message.edit_text(
-                f"{prompts[action]}\n{cancel_hint}"
+                prompts[action],
+                reply_markup=reply_markup
             )
             
             return SEARCHING
