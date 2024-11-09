@@ -132,13 +132,56 @@ if ! check_python_version; then
     exit 1
 fi
 
+# Configuration
+INSTALL_TIMEOUT=120 # 2 minutes timeout for installations
+UPGRADE_TIMEOUT=120 # 2 minutes timeout for upgrades
+
+# Function to run command with timeout and fallback
+run_with_timeout() {
+    local command="$1"
+    local timeout_duration="$2"
+    local description="$3"
+    local hide_output="$4" # true/false for hiding output
+
+    echo -ne "${BLUE}${description}...${NC}"
+
+    if [ "$hide_output" = true ]; then
+        # First try: With hidden output
+        if timeout $timeout_duration $command >/dev/null 2>&1; then
+            echo -e "${GREEN}✓${NC}"
+            return 0
+        else
+            # If failed, retry with visible output
+            echo -e "${YELLOW}\nRetrying...${NC}"
+            if timeout $timeout_duration $command; then
+                echo -e "${GREEN}✓${NC}"
+                return 0
+            else
+                echo -e "${RED}✗${NC}"
+                return 1
+            fi
+        fi
+    else
+        # Run with visible output from the start
+        if timeout $timeout_duration $command; then
+            echo -e "${GREEN}✓${NC}"
+            return 0
+        else
+            echo -e "${RED}✗${NC}"
+            return 1
+        fi
+    fi
+}
+
 # Check pip version and only upgrade if needed
 if ! check_pip_version; then
     if [ "$SKIP_PIP_UPGRADE" != "true" ]; then
         echo -e "${YELLOW}Would you like to upgrade pip? [y/N]${NC}"
         read -r response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-            progress "Upgrading pip" "pip install --upgrade pip > /dev/null 2>&1"
+            if ! run_with_timeout "pip install --upgrade pip" $UPGRADE_TIMEOUT "Upgrading pip" true; then
+                echo -e "${RED}Failed to upgrade pip. Try continuing with current version...${NC}"
+            fi
         else
             echo -e "${BLUE}Skipping pip upgrade${NC}"
         fi
@@ -160,7 +203,14 @@ source venv/bin/activate || {
 
 # Install requirements
 echo -e "\n${BLUE}Installing dependencies...${NC}"
-progress "Installing required packages" "pip install -r requirements.txt > /dev/null 2>&1"
+if ! run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Installing required packages" true; then
+    echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
+    echo -e "${YELLOW}Would you like to retry with visible output? [Y/n]${NC}"
+    read -r response
+    if [[ ! "$response" =~ ^([nN][oO]|[nN])$ ]]; then
+        run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Retrying installation" false
+    fi
+fi
 
 # Create necessary directories
 echo -e "\n${BLUE}Creating directory structure...${NC}"
