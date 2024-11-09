@@ -784,18 +784,27 @@ class MediaHandler:
     @require_auth
     async def handle_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle status check request"""
-        message = update.message or update.callback_query.message
-        if not message:
-            logger.error("No message object found in update")
-            return
-
-        # Get status from all services
-        status_text = await self._get_status_text()
-        
-        await message.edit_text(
-            status_text,
-            reply_markup=get_system_keyboard()
-        )
+        try:
+            # Get status from all services
+            status_text = await self._get_status_text()
+            
+            if update.callback_query:
+                await update.callback_query.message.edit_text(
+                    status_text,
+                    reply_markup=get_system_keyboard()
+                )
+            else:
+                await update.message.reply_text(
+                    status_text,
+                    reply_markup=get_system_keyboard()
+                )
+        except Exception as e:
+            logger.error(f"Error in handle_status: {e}")
+            error_msg = "❌ Error getting system status. Please try again later."
+            if update.callback_query:
+                await update.callback_query.message.edit_text(error_msg)
+            else:
+                await update.message.reply_text(error_msg)
     
     @require_auth
     async def handle_settings(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

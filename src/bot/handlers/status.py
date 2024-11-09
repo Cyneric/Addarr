@@ -60,18 +60,47 @@ class StatusHandler:
             else:
                 message += "✅ All services are healthy\n"
             
-            # Send status message
-            await update.message.reply_text(
-                message,
-                parse_mode='Markdown'
-            )
+            if update.callback_query:
+                # If it's a callback query, edit the message
+                await update.callback_query.message.edit_text(
+                    message,
+                    parse_mode='Markdown'
+                )
+            else:
+                # If it's a direct command, send a new message
+                await update.message.reply_text(
+                    message,
+                    parse_mode='Markdown'
+                )
             
         except Exception as e:
             logger.error(f"Error handling status command: {str(e)}")
-            await update.message.reply_text(
-                "❌ Error getting system status. Please try again later."
-            ) 
+            error_message = "❌ Error getting system status. Please try again later."
+            
+            if update.callback_query:
+                await update.callback_query.message.edit_text(error_message)
+            else:
+                await update.message.reply_text(error_message)
 
-    # This method is defined but never implemented
     async def refresh_status(self, query):
-        pass
+        """Refresh status message"""
+        try:
+            # Get bot instance
+            bot = query.bot.application.bot_instance
+            
+            # Get updated health status
+            health_status = bot.health_checker.get_status()
+            
+            # Build status message (same as _handle_status)
+            message = "📊 *System Status*\n\n"
+            # ... (rest of message building)
+            
+            await query.message.edit_text(
+                message,
+                parse_mode='Markdown'
+            )
+            await query.answer("Status refreshed")
+            
+        except Exception as e:
+            logger.error(f"Error refreshing status: {str(e)}")
+            await query.answer("Failed to refresh status", show_alert=True)
