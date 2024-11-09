@@ -28,10 +28,12 @@ APP_CACHE_DIR="$XDG_CACHE_HOME/addarr"
 if [ -n "${BASH_SOURCE[0]}" ]; then
     SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 else
-    # When script is piped to bash, try to download files directly
-    SOURCE_DIR=$(mktemp -d)
+    # When script is piped to bash, download files directly to the app directory
     echo -e "${BLUE}Downloading Addarr files...${NC}"
-    echo -e "${BLUE}Using temporary directory: $SOURCE_DIR${NC}"
+
+    # Create necessary directories
+    mkdir -p "$APP_DATA_DIR/src"
+    mkdir -p "$APP_CONFIG_DIR"
 
     # Function to download a file with error checking
     download_file() {
@@ -45,14 +47,7 @@ else
             return 0
         fi
 
-        # If curl fails, try with insecure option (not recommended but might help diagnose the issue)
-        echo -e "${YELLOW}First attempt failed, trying alternate method...${NC}"
-        if curl -sfLk "$url" -o "$output"; then
-            echo -e "${GREEN}Successfully downloaded: $output (using relaxed SSL)${NC}"
-            return 0
-        fi
-
-        # If curl still fails, try wget as a fallback
+        # If curl fails, try wget as a fallback
         echo -e "${YELLOW}Curl failed, trying wget...${NC}"
         if wget --quiet "$url" -O "$output"; then
             echo -e "${GREEN}Successfully downloaded: $output (using wget)${NC}"
@@ -62,38 +57,35 @@ else
         # If all methods fail, show detailed error information
         echo -e "${RED}Failed to download: $url${NC}"
         echo -e "${RED}Curl Status: $(curl -s -o /dev/null -w "%{http_code}" "$url")${NC}"
-        echo -e "${RED}Curl Error: $(curl -sS "$url" 2>&1)${NC}"
         return 1
     }
 
-    # Create directories
-    mkdir -p "$SOURCE_DIR/src"
-
-    # Download files with error checking
-    files_to_download=(
-        "raw.githubusercontent.com/cyneric/addarr/main/requirements.txt:$SOURCE_DIR/requirements.txt"
-        "raw.githubusercontent.com/cyneric/addarr/main/src/run.py:$SOURCE_DIR/src/run.py"
-        "raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml:$SOURCE_DIR/config_example.yaml"
-    )
-
+    # Download files directly to their final locations
     download_failed=0
-    for file_pair in "${files_to_download[@]}"; do
-        url="${file_pair%%:*}"
-        output="${file_pair#*:}"
-        if ! download_file "https://$url" "$output"; then
-            download_failed=1
-        fi
-    done
+
+    # Download requirements.txt
+    if ! download_file "https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt" "$APP_DATA_DIR/requirements.txt"; then
+        download_failed=1
+    fi
+
+    # Download run.py
+    if ! download_file "https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py" "$APP_DATA_DIR/src/run.py"; then
+        download_failed=1
+    fi
+
+    # Download config example
+    if ! download_file "https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml" "$APP_CONFIG_DIR/config_example.yaml"; then
+        download_failed=1
+    fi
 
     if [ $download_failed -eq 1 ]; then
         echo -e "${RED}One or more files failed to download${NC}"
-        echo -e "${YELLOW}Cleaning up temporary directory: $SOURCE_DIR${NC}"
-        rm -rf "$SOURCE_DIR"
+        echo -e "${RED}Installation failed${NC}"
         exit 1
     fi
 
-    echo -e "${BLUE}Directory contents:${NC}"
-    ls -R "$SOURCE_DIR"
+    # Set SOURCE_DIR to APP_DATA_DIR since that's where we downloaded everything
+    SOURCE_DIR="$APP_DATA_DIR"
 fi
 
 # Spinner function
