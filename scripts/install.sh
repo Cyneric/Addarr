@@ -1,150 +1,173 @@
 #!/bin/bash
+
 # Filename: install.sh
 # Author: Christian Blank (https://github.com/cyneric)
 # Created Date: 2024-11-08
-# Description: Bash installer script for Addarr, a Media Management Telegram Bot.
+# Description: Bash installer script for Addarr.
 # License: MIT
 
-# Colors for output
+# ANSI color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Minimum required Python version
+MIN_PYTHON_VERSION="3.8"
+
 echo -e "${BLUE}
 ╔═══════════════════════════════════════╗
 ║           Addarr Installer            ║
 ║     Media Management Telegram Bot     ║
 ╚═══════════════════════════════════════╝${NC}"
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-# Check for required commands
-check_command() {
-    if ! command -v "$1" &>/dev/null; then
-        echo -e "${RED}Error: $1 is required but not installed.${NC}"
-        echo -e "Please install $1 and try again."
-        exit 1
+# Function to compare version numbers
+version_compare() {
+    echo "$1" "$2" | awk '{if ($1 < $2) exit 1; exit 0}'
+}
+
+# Function to check Python version
+check_python_version() {
+    if command_exists python3; then
+        PYTHON_CMD="python3"
+    elif command_exists python; then
+        PYTHON_CMD="python"
+    else
+        return 1
+    fi
+
+    PYTHON_VERSION=$($PYTHON_CMD -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+    if version_compare "$PYTHON_VERSION" "$MIN_PYTHON_VERSION"; then
+        echo -e "${GREEN}✓ Python $PYTHON_VERSION detected${NC}"
+        return 0
+    else
+        echo -e "${RED}✗ Python $PYTHON_VERSION detected, but version $MIN_PYTHON_VERSION or higher is required${NC}"
+        return 1
     fi
 }
 
-check_command "python3"
-check_command "pip3"
-check_command "git"
+# Check for Python installation
+if ! check_python_version; then
+    echo -e "${YELLOW}Python $MIN_PYTHON_VERSION or higher is required but not found.${NC}"
+    echo -e "Please install Python using one of these methods:\n"
 
-# Create installation directory
-INSTALL_DIR="$HOME/.addarr"
-echo -e "\n${YELLOW}Installing Addarr to: ${INSTALL_DIR}${NC}"
+    case "$(uname -s)" in
+    Linux*)
+        echo "For Debian/Ubuntu:"
+        echo "  sudo apt update"
+        echo "  sudo apt install python3 python3-pip python3-venv"
+        echo -e "\nFor Fedora:"
+        echo "  sudo dnf install python3 python3-pip python3-venv"
+        echo -e "\nFor Arch Linux:"
+        echo "  sudo pacman -S python python-pip"
+        ;;
+    Darwin*)
+        echo "Using Homebrew:"
+        echo "  brew install python"
+        echo -e "\nOr download from:"
+        echo "  https://www.python.org/downloads/"
+        ;;
+    MINGW* | CYGWIN* | MSYS*)
+        echo "Download the installer from:"
+        echo "  https://www.python.org/downloads/"
+        echo -e "\nOr using winget:"
+        echo "  winget install Python.Python.3"
+        ;;
+    esac
 
-if [ -d "$INSTALL_DIR" ]; then
-    echo -e "${YELLOW}Installation directory already exists. Backing up...${NC}"
-    mv "$INSTALL_DIR" "${INSTALL_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
+    echo -e "\n${YELLOW}Please install Python and run this script again.${NC}"
+    exit 1
 fi
 
-# Clone repository
-echo -e "\n${BLUE}Cloning repository...${NC}"
-git clone https://github.com/cyneric/addarr.git "$INSTALL_DIR"
+# Check for pip
+if ! command_exists pip3 && ! command_exists pip; then
+    echo -e "${RED}✗ pip not found${NC}"
+    echo -e "${YELLOW}Installing pip...${NC}"
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Failed to clone repository${NC}"
-    exit 1
+    case "$(uname -s)" in
+    Linux*)
+        sudo apt update && sudo apt install python3-pip ||
+            sudo dnf install python3-pip ||
+            sudo pacman -S python-pip
+        ;;
+    Darwin*)
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        python3 get-pip.py
+        rm get-pip.py
+        ;;
+    *)
+        echo -e "${RED}Please install pip manually and run this script again.${NC}"
+        exit 1
+        ;;
+    esac
+fi
+
+# Check for venv module
+if ! $PYTHON_CMD -c "import venv" 2>/dev/null; then
+    echo -e "${RED}✗ venv module not found${NC}"
+    echo -e "${YELLOW}Installing venv...${NC}"
+
+    case "$(uname -s)" in
+    Linux*)
+        sudo apt update && sudo apt install python3-venv ||
+            sudo dnf install python3-venv ||
+            sudo pacman -S python-virtualenv
+        ;;
+    *)
+        echo -e "${RED}Please install the venv module manually and run this script again.${NC}"
+        exit 1
+        ;;
+    esac
 fi
 
 # Create virtual environment
 echo -e "\n${BLUE}Creating virtual environment...${NC}"
-cd "$INSTALL_DIR"
-python3 -m venv venv
+$PYTHON_CMD -m venv venv
 
-# Activate virtual environment and install dependencies
-echo -e "\n${BLUE}Installing dependencies...${NC}"
-source venv/bin/activate
+# Activate virtual environment
+echo -e "${BLUE}Activating virtual environment...${NC}"
+source venv/bin/activate || {
+    echo -e "${RED}Failed to activate virtual environment${NC}"
+    exit 1
+}
+
+# Upgrade pip
+echo -e "${BLUE}Upgrading pip...${NC}"
 pip install --upgrade pip
+
+# Install requirements
+echo -e "${BLUE}Installing requirements...${NC}"
 pip install -r requirements.txt
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Failed to install dependencies${NC}"
-    exit 1
-fi
+# Create necessary directories
+echo -e "${BLUE}Creating necessary directories...${NC}"
+mkdir -p logs
+mkdir -p data
+mkdir -p backup
 
-# Create launcher script
-LAUNCHER="$HOME/.local/bin/addarr"
-mkdir -p "$(dirname "$LAUNCHER")"
-
-cat >"$LAUNCHER" <<'EOF'
-#!/bin/bash
-ADDARR_DIR="$HOME/.addarr"
-source "$ADDARR_DIR/venv/bin/activate"
-python "$ADDARR_DIR/run.py" "$@"
-EOF
-
-chmod +x "$LAUNCHER"
-
-# Add to PATH if needed
-if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$HOME/.bashrc"
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$HOME/.zshrc" 2>/dev/null || true
-fi
-
-# Ask about systemd service installation
-if command -v systemctl &>/dev/null; then
-    echo -e "\n${YELLOW}Would you like to install Addarr as a system service? [y/N]${NC}"
-    read -r install_service
-
-    if [[ "$install_service" =~ ^[Yy]$ ]]; then
-        # Create systemd service file
-        SERVICE_FILE="$HOME/.config/systemd/user/addarr.service"
-        mkdir -p "$(dirname "$SERVICE_FILE")"
-
-        cat >"$SERVICE_FILE" <<EOF
-[Unit]
-Description=Addarr Telegram Bot
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=$LAUNCHER
-Restart=always
-RestartSec=10
-Environment=PATH=$PATH
-WorkingDirectory=$INSTALL_DIR
-
-[Install]
-WantedBy=default.target
-EOF
-
-        # Reload systemd
-        systemctl --user daemon-reload
-
-        # Ask about starting at boot
-        echo -e "\n${YELLOW}Would you like Addarr to start automatically at boot? [y/N]${NC}"
-        read -r start_boot
-
-        if [[ "$start_boot" =~ ^[Yy]$ ]]; then
-            # Enable service and lingering for user
-            systemctl --user enable addarr.service
-            loginctl enable-linger "$USER"
-            echo -e "${GREEN}✓ Addarr will start automatically at boot${NC}"
-        fi
-
-        # Ask about starting the service now
-        echo -e "\n${YELLOW}Would you like to start Addarr now? [y/N]${NC}"
-        read -r start_now
-
-        if [[ "$start_now" =~ ^[Yy]$ ]]; then
-            systemctl --user start addarr.service
-            echo -e "${GREEN}✓ Addarr service started${NC}"
-            echo -e "\n${BLUE}You can manage the service with:${NC}"
-            echo -e "systemctl --user status addarr"
-            echo -e "systemctl --user start addarr"
-            echo -e "systemctl --user stop addarr"
-            echo -e "systemctl --user restart addarr"
-        fi
+# Check if config.yaml exists
+if [ ! -f config.yaml ]; then
+    echo -e "${YELLOW}No config.yaml found. Creating from example...${NC}"
+    if [ -f config_example.yaml ]; then
+        cp config_example.yaml config.yaml
+        echo -e "${GREEN}✓ Created config.yaml${NC}"
+        echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
+    else
+        echo -e "${RED}✗ config_example.yaml not found${NC}"
     fi
 fi
 
-echo -e "\n${GREEN}Installation complete!${NC}"
-echo -e "\n${YELLOW}To get started:${NC}"
-echo -e "1. Run initial setup:${BLUE} addarr --setup${NC}"
-if [[ ! "$install_service" =~ ^[Yy]$ ]]; then
-    echo -e "2. Start the bot:${BLUE} addarr${NC}"
-fi
-echo -e "\nFor more information, visit: ${BLUE}https://github.com/cyneric/addarr/wiki${NC}"
+echo -e "\n${GREEN}Installation completed!${NC}"
+echo -e "\nTo start Addarr:"
+echo -e "1. Activate the virtual environment:"
+echo -e "   ${BLUE}source venv/bin/activate${NC}"
+echo -e "2. Run the setup wizard:"
+echo -e "   ${BLUE}python run.py --setup${NC}"
+echo -e "3. Start the bot:"
+echo -e "   ${BLUE}python run.py${NC}"
+echo -e "\n${YELLOW}For more information, visit: https://github.com/cyneric/addarr/wiki${NC}"
