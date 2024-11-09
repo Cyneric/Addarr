@@ -177,15 +177,18 @@ run_with_timeout() {
 
     echo -ne "${BLUE}${description}...${NC}"
 
+    # Remove quotes from command to prevent path issues
+    command=$(echo "$command" | tr -d '"')
+
     if [ "$hide_output" = true ]; then
         # First try: With hidden output
-        if timeout $timeout_duration $command >/dev/null 2>&1; then
+        if timeout $timeout_duration bash -c "$command" >/dev/null 2>&1; then
             echo -e "${GREEN}✓${NC}"
             return 0
         else
             # If failed, retry with visible output
             echo -e "${YELLOW}\nRetrying...${NC}"
-            if timeout $timeout_duration $command; then
+            if timeout $timeout_duration bash -c "$command"; then
                 echo -e "${GREEN}✓${NC}"
                 return 0
             else
@@ -195,7 +198,7 @@ run_with_timeout() {
         fi
     else
         # Run with visible output from the start
-        if timeout $timeout_duration $command; then
+        if timeout $timeout_duration bash -c "$command"; then
             echo -e "${GREEN}✓${NC}"
             return 0
         else
@@ -281,7 +284,7 @@ setup_configuration() {
 echo -e "${BLUE}
 ╔═══════════════════════════════════════╗
 ║           Addarr Installer            ║
-��     Media Management Telegram Bot     ║
+     Media Management Telegram Bot     ║
 ╚═══════════════════════════════════════╝${NC}"
 
 # Check Python and pip versions (keep existing checks)
@@ -297,12 +300,13 @@ if [ ! -f "$SOURCE_DIR/requirements.txt" ]; then
     exit 1
 fi
 
-if ! run_with_timeout "pip install --user -r \"$SOURCE_DIR/requirements.txt\"" $INSTALL_TIMEOUT "Installing required packages" true; then
+# Updated command without quotes around the path
+if ! run_with_timeout "pip install --user -r $SOURCE_DIR/requirements.txt" $INSTALL_TIMEOUT "Installing required packages" true; then
     echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
     echo -e "${YELLOW}Would you like to retry with more detailed console output? [Y/n]${NC}"
     read -r response
     if [[ ! "$response" =~ ^([nN][oO]|[nN])$ ]]; then
-        run_with_timeout "pip install --user -r \"$SOURCE_DIR/requirements.txt\"" $INSTALL_TIMEOUT "Retrying installation" false
+        run_with_timeout "pip install --user -r $SOURCE_DIR/requirements.txt" $INSTALL_TIMEOUT "Retrying installation" false
     fi
 fi
 
