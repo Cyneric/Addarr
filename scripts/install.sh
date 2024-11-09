@@ -441,13 +441,6 @@ if ! "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"; the
     exit 1
 fi
 
-# Start the setup wizard
-if ! $PYTHON_CMD run.py --setup; then
-    echo -e "${RED}Failed to start setup wizard.${NC}"
-    echo -e "${YELLOW}You can run it manually later with: $PYTHON_CMD run.py --setup${NC}"
-    exit 1
-fi
-
 # Installation Summary
 echo -e "\n${GREEN}╔═══════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║         Installation Complete! 🎉      ║${NC}"
