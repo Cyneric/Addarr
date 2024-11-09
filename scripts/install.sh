@@ -86,7 +86,17 @@ check_python_version() {
 
 # Function to check pip version
 check_pip_version() {
-    local pip_version=$(pip --version | awk '{print $2}')
+    local pip_cmd
+    if command -v pip3 >/dev/null 2>&1; then
+        pip_cmd="pip3"
+    elif command -v pip >/dev/null 2>&1; then
+        pip_cmd="pip"
+    else
+        echo -e "${RED}✗ pip not found${NC}"
+        return 1
+    fi
+
+    local pip_version=$($pip_cmd --version | awk '{print $2}')
     local current_ver=$(echo "$pip_version" | sed 's/\.//g')
     local min_ver=$(echo "$MIN_PIP_VERSION" | sed 's/\.//g')
 
@@ -130,6 +140,34 @@ if ! check_python_version; then
 
     echo -e "\n${YELLOW}Please install Python and run this script again.${NC}"
     exit 1
+fi
+
+# Install pip if not present
+if ! command -v pip >/dev/null 2>&1 && ! command -v pip3 >/dev/null 2>&1; then
+    echo -e "${YELLOW}Installing pip...${NC}"
+    case "$(uname -s)" in
+    Linux*)
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y python3-pip
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y python3-pip
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S python-pip
+        else
+            echo -e "${RED}Unable to install pip. Please install pip manually.${NC}"
+            exit 1
+        fi
+        ;;
+    Darwin*)
+        if command -v brew >/dev/null 2>&1; then
+            brew install python
+        else
+            echo -e "${RED}Please install Homebrew first: https://brew.sh${NC}"
+            exit 1
+        fi
+        ;;
+    esac
 fi
 
 # Configuration
@@ -207,7 +245,7 @@ progress "Creating logs directory" "mkdir -p logs"
 progress "Creating data directory" "mkdir -p data"
 progress "Creating backup directory" "mkdir -p backup"
 
-# Check if config.yaml exists
+# Create config from example if it doesn't exist
 if [ ! -f config.yaml ]; then
     echo -e "\n${YELLOW}No config.yaml found. Creating from example...${NC}"
     if [ -f config_example.yaml ]; then
@@ -215,7 +253,15 @@ if [ ! -f config.yaml ]; then
         echo -e "${GREEN}✓ Created config.yaml${NC}"
         echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
     else
-        echo -e "${RED}✗ config_example.yaml not found${NC}"
+        # Download example config if not present
+        echo -e "${YELLOW}Downloading example config...${NC}"
+        curl -sSL https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml -o config.yaml
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ Created config.yaml${NC}"
+            echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
+        else
+            echo -e "${RED}✗ Failed to download example config${NC}"
+        fi
     fi
 fi
 
