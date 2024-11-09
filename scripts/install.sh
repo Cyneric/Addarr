@@ -433,7 +433,7 @@ download_with_progress() {
 # Replace the existing download section with this:
 echo -e "\n${BLUE}Downloading Addarr...${NC}"
 TMP_ZIP="/tmp/addarr.zip"
-if ! download_with_progress "https://github.com/cyneric/addarr/archive/main.zip" "$TMP_ZIP" "Downloading repository"; then
+if ! download_with_progress "https://github.com/Cyneric/Addarr/archive/refs/heads/main.zip" "$TMP_ZIP" "Downloading repository"; then
     echo -e "${RED}Failed to download repository${NC}"
     exit 1
 fi
