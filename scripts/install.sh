@@ -28,9 +28,12 @@ command_exists() {
 
 # Function to compare version numbers
 version_compare() {
-    # $1 is current version, $2 is minimum required version
-    printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1 | grep -q "^$2$"
-    return $?
+    # Returns true if $1 (current version) is greater than or equal to $2 (minimum version)
+    if [ "$(printf '%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]; then
+        return 0 # Success - current version is >= minimum
+    else
+        return 1 # Failure - current version is < minimum
+    fi
 }
 
 # Function to check Python version
