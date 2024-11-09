@@ -66,17 +66,25 @@ class StartHandler:
     @require_auth
     async def show_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Show the main menu"""
-        if not update.effective_message or not update.effective_user:
-            return
-            
         log_user_interaction(logger, update.effective_user, "/start")
-        
+
         welcome_text = self.translation.get_text("mainMenu")
         
-        await update.message.reply_text(
-            welcome_text,
-            reply_markup=get_main_menu_keyboard()
-        )
+        if update.callback_query:
+            # Handle callback query
+            query = update.callback_query
+            await query.answer()
+            await query.message.edit_text(
+                welcome_text,
+                reply_markup=get_main_menu_keyboard()
+            )
+        elif update.effective_message:
+            # Handle direct command
+            await update.effective_message.reply_text(
+                welcome_text,
+                reply_markup=get_main_menu_keyboard()
+            )
+        
         return 1  # Return MENU_STATE to enter the menu state
     
     @require_auth
@@ -99,6 +107,11 @@ class StartHandler:
         logger.info(f"Menu button pressed - Action: {action}, User: {user.first_name} (ID: {user.id})")
         log_user_interaction(logger, user, f"menu_{action}")
         
+        if action == "back":
+            logger.info(f"Back to menu requested by user {user.first_name} (ID: {user.id})")
+            await self.show_menu(update, context)
+            return
+            
         if action == "cancel":
             logger.info(f"Cancel action triggered by user {user.first_name} (ID: {user.id})")
             # Clean up any user data that might have been set
@@ -144,9 +157,6 @@ class StartHandler:
         elif action == "help":
             logger.info(f"Help requested by user {user.first_name} (ID: {user.id})")
             await self.help_handler.show_help(update, context)
-        elif action == "back":
-            logger.info(f"Back to menu requested by user {user.first_name} (ID: {user.id})")
-            await self.show_menu(update, context)
         else:
             logger.warning(f"Unknown menu action '{action}' from user {user.first_name} (ID: {user.id})")
     
