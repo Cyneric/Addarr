@@ -32,15 +32,15 @@ else
     SOURCE_DIR=$(mktemp -d)
     echo -e "${BLUE}Downloading Addarr files...${NC}"
 
-    # Download required files
-    wget -q https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt -O "$SOURCE_DIR/requirements.txt"
+    # Download required files - using curl instead of wget for better compatibility
+    curl -sfL https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt -o "$SOURCE_DIR/requirements.txt"
 
     # Create src directory and download main files
     mkdir -p "$SOURCE_DIR/src"
-    wget -q https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py -O "$SOURCE_DIR/src/run.py"
+    curl -sfL https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py -o "$SOURCE_DIR/src/run.py"
 
     # Download config example
-    wget -q https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml -O "$SOURCE_DIR/config_example.yaml"
+    curl -sfL https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml -o "$SOURCE_DIR/config_example.yaml"
 
     # Check if downloads were successful
     if [ ! -f "$SOURCE_DIR/requirements.txt" ] || [ ! -f "$SOURCE_DIR/src/run.py" ] || [ ! -f "$SOURCE_DIR/config_example.yaml" ]; then
@@ -48,6 +48,10 @@ else
         rm -rf "$SOURCE_DIR"
         exit 1
     fi
+
+    # Debug output
+    echo -e "${BLUE}Files downloaded to: $SOURCE_DIR${NC}"
+    ls -la "$SOURCE_DIR"
 fi
 
 # Spinner function
@@ -301,12 +305,12 @@ if [ ! -f "$SOURCE_DIR/requirements.txt" ]; then
 fi
 
 # Updated command without quotes around the path
-if ! run_with_timeout "pip install --user -r '$SOURCE_DIR/requirements.txt'" $INSTALL_TIMEOUT "Installing required packages" true; then
+if ! run_with_timeout "pip install --user -r \"$SOURCE_DIR/requirements.txt\"" $INSTALL_TIMEOUT "Installing required packages" true; then
     echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
     echo -e "${YELLOW}Would you like to retry with more detailed console output? [Y/n]${NC}"
     read -r response
     if [[ ! "$response" =~ ^([nN][oO]|[nN])$ ]]; then
-        run_with_timeout "pip install --user -r '$SOURCE_DIR/requirements.txt'" $INSTALL_TIMEOUT "Retrying installation" false
+        run_with_timeout "pip install --user -r \"$SOURCE_DIR/requirements.txt\"" $INSTALL_TIMEOUT "Retrying installation" false
     fi
 fi
 
