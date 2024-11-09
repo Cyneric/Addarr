@@ -335,19 +335,105 @@ INSTALL_DIR="$HOME/.addarr"
 echo -e "\n${BLUE}Installing Addarr to: $INSTALL_DIR${NC}"
 
 if [ -d "$INSTALL_DIR" ]; then
+    # Check if it's a valid installation
+    if [ ! -f "$INSTALL_DIR/run.py" ]; then
+        echo -e "${YELLOW}Warning: Existing directory doesn't seem to be a valid Addarr installation${NC}"
+    fi
     echo -e "${YELLOW}Installation directory already exists. Creating backup...${NC}"
     BACKUP_DIR="$INSTALL_DIR.backup.$(date +%Y%m%d_%H%M%S)"
-    mv "$INSTALL_DIR" "$BACKUP_DIR"
+    if ! mv "$INSTALL_DIR" "$BACKUP_DIR"; then
+        echo -e "${RED}Failed to create backup${NC}"
+        exit 1
+    fi
     echo -e "${GREEN}✓ Backup created at: $BACKUP_DIR${NC}"
 fi
 
 # Create installation directory
 mkdir -p "$INSTALL_DIR"
 
-# Download and extract repository
+# Function to format size in human-readable format
+format_size() {
+    local bytes=$1
+    if [ $bytes -gt 1073741824 ]; then
+        echo "$(awk "BEGIN {printf \"%.1f\", $bytes/1073741824}") GB"
+    elif [ $bytes -gt 1048576 ]; then
+        echo "$(awk "BEGIN {printf \"%.1f\", $bytes/1048576}") MB"
+    elif [ $bytes -gt 1024 ]; then
+        echo "$(awk "BEGIN {printf \"%.1f\", $bytes/1024}") KB"
+    else
+        echo "$bytes B"
+    fi
+}
+
+# Function to download with progress bar
+download_with_progress() {
+    local url="$1"
+    local output_file="$2"
+    local title="$3"
+
+    # Create a temporary file for progress output
+    local tmp_progress="/tmp/curl_progress.$$"
+
+    # Start curl in the background with progress to temp file
+    (curl -L --progress-bar "$url" -o "$output_file" 2>"$tmp_progress") &
+    local curl_pid=$!
+
+    echo -e "${BLUE}${title}...${NC}"
+    
+    # Variables for progress calculation
+    local downloaded=0
+    local total_size=0
+    local percentage=0
+    local bar_size=40
+    local progress_chars=""
+
+    # Update progress while curl is running
+    while kill -0 $curl_pid 2>/dev/null; do
+        if [ -f "$tmp_progress" ]; then
+            # Parse curl's progress output
+            local curl_output=$(tail -n 1 "$tmp_progress")
+            if [[ $curl_output =~ [0-9]+/([0-9]+) ]]; then
+                downloaded=$(echo "$curl_output" | grep -o '[0-9]*' | head -1)
+                total_size=$(echo "$curl_output" | grep -o '[0-9]*' | tail -1)
+                
+                if [ $total_size -gt 0 ]; then
+                    percentage=$((downloaded * 100 / total_size))
+                    filled_length=$((percentage * bar_size / 100))
+                    unfilled_length=$((bar_size - filled_length))
+                    
+                    # Create progress bar
+                    progress_chars=""
+                    for ((i=0; i<filled_length; i++)); do progress_chars+="█"; done
+                    for ((i=0; i<unfilled_length; i++)); do progress_chars+="░"; done
+                    
+                    # Clear line and show progress
+                    echo -ne "\r\033[K"
+                    echo -ne "${BLUE}Progress: ${NC}[${GREEN}${progress_chars}${NC}] "
+                    echo -ne "${YELLOW}${percentage}%${NC} "
+                    echo -ne "($(format_size $downloaded)/$(format_size $total_size))"
+                fi
+            fi
+        fi
+        sleep 0.1
+    done
+
+    # Wait for curl to finish and get its exit status
+    wait $curl_pid
+    local exit_status=$?
+
+    # Clean up
+    rm -f "$tmp_progress"
+
+    # Final newline
+    echo
+
+    return $exit_status
+}
+
+# Replace the existing download section with this:
 echo -e "\n${BLUE}Downloading Addarr...${NC}"
 TMP_ZIP="/tmp/addarr.zip"
-if ! curl -L "https://github.com/cyneric/addarr/archive/main.zip" -o "$TMP_ZIP"; then
+if ! download_with_progress "https://github.com/cyneric/addarr/archive/main.zip" "$TMP_ZIP" "Downloading repository"; then
     echo -e "${RED}Failed to download repository${NC}"
     exit 1
 fi
@@ -519,7 +605,10 @@ if ! $PYTHON_CMD -m venv "$INSTALL_DIR/venv"; then
 fi
 
 # Activate virtual environment
-source "$INSTALL_DIR/venv/bin/activate"
+if ! source "$INSTALL_DIR/venv/bin/activate"; then
+    echo -e "${RED}Failed to activate virtual environment${NC}"
+    exit 1
+fi
 
 # Update pip in virtual environment
 echo -e "\n${BLUE}Updating pip in virtual environment...${NC}"
@@ -566,3 +655,20 @@ if [[ ":$PATH:" != *":$SHORTCUT_DIR:"* ]]; then
     echo -e "${YELLOW}source ~/.bashrc${NC}"
     echo -e "${YELLOW}to use the 'addarr' command.${NC}\n"
 fi
+
+cleanup() {
+    # Remove temporary files
+    rm -f "$TMP_ZIP" 2>/dev/null
+    rm -rf "$EXTRACTED_DIR" 2>/dev/null
+    
+    # If installation failed, restore backup if it exists
+    if [ "$1" = "error" ] && [ -d "$BACKUP_DIR" ]; then
+        echo -e "${YELLOW}Restoring backup...${NC}"
+        rm -rf "$INSTALL_DIR"
+        mv "$BACKUP_DIR" "$INSTALL_DIR"
+    fi
+}
+
+# Add trap
+trap 'cleanup error' ERR
+trap cleanup EXIT
