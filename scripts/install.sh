@@ -205,7 +205,7 @@ source venv/bin/activate || {
 echo -e "\n${BLUE}Installing dependencies...${NC}"
 if ! run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Installing required packages" true; then
     echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
-    echo -e "${YELLOW}Would you like to retry with visible output? [Y/n]${NC}"
+    echo -e "${YELLOW}Would you like to retry with more detailed console output? [Y/n]${NC}"
     read -r response
     if [[ ! "$response" =~ ^([nN][oO]|[nN])$ ]]; then
         run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Retrying installation" false
