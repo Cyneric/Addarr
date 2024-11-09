@@ -13,81 +13,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# XDG Base Directory paths
-XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
-XDG_BIN_HOME="$HOME/.local/bin"
-
-# Application directories
-APP_DATA_DIR="$XDG_DATA_HOME/addarr"
-APP_CONFIG_DIR="$XDG_CONFIG_HOME/addarr"
-APP_CACHE_DIR="$XDG_CACHE_HOME/addarr"
-
-# Source directory (where the script is running from)
-if [ -n "${BASH_SOURCE[0]}" ]; then
-    SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-else
-    # When script is piped to bash, download files directly to the app directory
-    echo -e "${BLUE}Downloading Addarr files...${NC}"
-
-    # Create necessary directories
-    mkdir -p "$APP_DATA_DIR/src"
-    mkdir -p "$APP_CONFIG_DIR"
-
-    # Function to download a file with error checking
-    download_file() {
-        local url="$1"
-        local output="$2"
-        echo -e "${BLUE}Downloading: $url${NC}"
-
-        # Try curl first with strict SSL
-        if curl -sfL "$url" -o "$output"; then
-            echo -e "${GREEN}Successfully downloaded: $output${NC}"
-            return 0
-        fi
-
-        # If curl fails, try wget as a fallback
-        echo -e "${YELLOW}Curl failed, trying wget...${NC}"
-        if wget --quiet "$url" -O "$output"; then
-            echo -e "${GREEN}Successfully downloaded: $output (using wget)${NC}"
-            return 0
-        fi
-
-        # If all methods fail, show detailed error information
-        echo -e "${RED}Failed to download: $url${NC}"
-        echo -e "${RED}Curl Status: $(curl -s -o /dev/null -w "%{http_code}" "$url")${NC}"
-        return 1
-    }
-
-    # Download files directly to their final locations
-    download_failed=0
-
-    # Download requirements.txt
-    if ! download_file "https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt" "$APP_DATA_DIR/requirements.txt"; then
-        download_failed=1
-    fi
-
-    # Download run.py
-    if ! download_file "https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py" "$APP_DATA_DIR/src/run.py"; then
-        download_failed=1
-    fi
-
-    # Download config example
-    if ! download_file "https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml" "$APP_CONFIG_DIR/config_example.yaml"; then
-        download_failed=1
-    fi
-
-    if [ $download_failed -eq 1 ]; then
-        echo -e "${RED}One or more files failed to download${NC}"
-        echo -e "${RED}Installation failed${NC}"
-        exit 1
-    fi
-
-    # Set SOURCE_DIR to APP_DATA_DIR since that's where we downloaded everything
-    SOURCE_DIR="$APP_DATA_DIR"
-fi
-
 # Spinner function
 spinner() {
     local pid=$1
@@ -124,6 +49,11 @@ MIN_PYTHON_VERSION="3.8"
 # Minimum required pip version
 MIN_PIP_VERSION="20.0" # Example minimum version
 
+echo -e "${BLUE}
+╔═══════════════════════════════════════╗
+║           Addarr Installer            ║
+║     Media Management Telegram Bot     ║
+╚═══════════════════════════════════════╝${NC}"
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -215,18 +145,15 @@ run_with_timeout() {
 
     echo -ne "${BLUE}${description}...${NC}"
 
-    # Remove surrounding quotes but preserve internal quotes
-    command=$(echo "$command" | sed 's/^"\(.*\)"$/\1/')
-
     if [ "$hide_output" = true ]; then
         # First try: With hidden output
-        if timeout $timeout_duration bash -c "$command" >/dev/null 2>&1; then
+        if timeout $timeout_duration $command >/dev/null 2>&1; then
             echo -e "${GREEN}✓${NC}"
             return 0
         else
             # If failed, retry with visible output
             echo -e "${YELLOW}\nRetrying...${NC}"
-            if timeout $timeout_duration bash -c "$command"; then
+            if timeout $timeout_duration $command; then
                 echo -e "${GREEN}✓${NC}"
                 return 0
             else
@@ -236,7 +163,7 @@ run_with_timeout() {
         fi
     else
         # Run with visible output from the start
-        if timeout $timeout_duration bash -c "$command"; then
+        if timeout $timeout_duration $command; then
             echo -e "${GREEN}✓${NC}"
             return 0
         else
@@ -263,137 +190,37 @@ else
     echo -e "${BLUE}pip version is up to date${NC}"
 fi
 
-# Function to check and update PATH
-check_path() {
-    if [[ ":$PATH:" != *":$XDG_BIN_HOME:"* ]]; then
-        echo -e "${YELLOW}Warning: $XDG_BIN_HOME is not in your PATH${NC}"
-        echo -e "Add the following line to your ~/.bashrc or ~/.zshrc:"
-        echo -e "${BLUE}export PATH=\"\$HOME/.local/bin:\$PATH\"${NC}"
-        return 1
-    fi
-    return 0
-}
-
-# Function to create XDG directories
-create_xdg_dirs() {
-    echo -e "\n${BLUE}Creating directory structure...${NC}"
-    progress "Creating data directory" "mkdir -p \"$APP_DATA_DIR\""
-    progress "Creating config directory" "mkdir -p \"$APP_CONFIG_DIR\""
-    progress "Creating cache directory" "mkdir -p \"$APP_CACHE_DIR\""
-    progress "Creating bin directory" "mkdir -p \"$XDG_BIN_HOME\""
-}
-
-# Function to install application files
-install_app_files() {
-    echo -e "\n${BLUE}Installing Addarr...${NC}"
-
-    # Create src directory if it doesn't exist
-    mkdir -p "$APP_DATA_DIR/src"
-
-    # Copy application files
-    progress "Copying application files" "cp -r \"$SOURCE_DIR/src\"/* \"$APP_DATA_DIR/src/\""
-    progress "Copying requirements.txt" "cp \"$SOURCE_DIR/requirements.txt\" \"$APP_DATA_DIR/\""
-
-    # Create run script
-    cat >"$XDG_BIN_HOME/addarr" <<EOF
-#!/bin/bash
-cd "$APP_DATA_DIR"
-PYTHONPATH="$APP_DATA_DIR" python3 "$APP_DATA_DIR/src/run.py" "\$@"
-EOF
-    progress "Setting executable permissions" "chmod +x \"$XDG_BIN_HOME/addarr\""
-}
-
-# Function to handle configuration
-setup_configuration() {
-    if [ ! -f "$APP_CONFIG_DIR/config.yaml" ]; then
-        echo -e "\n${YELLOW}No config.yaml found. Creating from example...${NC}"
-        if [ -f "$SOURCE_DIR/config_example.yaml" ]; then
-            progress "Creating config.yaml" "cp \"$SOURCE_DIR/config_example.yaml\" \"$APP_CONFIG_DIR/config.yaml\""
-            echo -e "${GREEN}✓ Created config.yaml${NC}"
-            echo -e "${YELLOW}Please edit $APP_CONFIG_DIR/config.yaml with your settings${NC}"
-        else
-            echo -e "${RED}✗ config_example.yaml not found at $SOURCE_DIR/config_example.yaml${NC}"
-            return 1
-        fi
-    fi
-}
-
-# Check for required tools
-check_required_tools() {
-    local missing_tools=()
-
-    if ! command -v curl >/dev/null && ! command -v wget >/dev/null; then
-        missing_tools+=("curl or wget")
-    fi
-
-    if [ ${#missing_tools[@]} -ne 0 ]; then
-        echo -e "${RED}Error: Required tools are missing: ${missing_tools[*]}${NC}"
-        echo -e "${YELLOW}Please install the missing tools and try again.${NC}"
-        echo -e "On Ubuntu/Debian: sudo apt-get install curl wget"
-        echo -e "On Fedora: sudo dnf install curl wget"
-        exit 1
-    fi
-}
-
-# Call the check near the start of the script
-check_required_tools
-
-# Main installation process
-echo -e "${BLUE}"
-echo "======================================"
-echo "          Addarr Installer            "
-echo "    Media Management Telegram Bot     "
-echo "======================================"
-echo -e "${NC}"
-
-# Check Python and pip versions (keep existing checks)
-# [Previous version checking code remains unchanged]
-
-# Create XDG directories
-create_xdg_dirs
-
 # Install requirements
 echo -e "\n${BLUE}Installing dependencies...${NC}"
-if [ ! -f "$SOURCE_DIR/requirements.txt" ]; then
-    echo -e "${RED}Error: requirements.txt not found at $SOURCE_DIR/requirements.txt${NC}"
-    exit 1
-fi
-
-# Updated command without quotes around the path
-if ! run_with_timeout "pip install --user -r \"$SOURCE_DIR/requirements.txt\"" $INSTALL_TIMEOUT "Installing required packages" true; then
+if ! run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Installing required packages" true; then
     echo -e "${RED}Failed to install some dependencies. Please check the output above.${NC}"
     echo -e "${YELLOW}Would you like to retry with more detailed console output? [Y/n]${NC}"
     read -r response
     if [[ ! "$response" =~ ^([nN][oO]|[nN])$ ]]; then
-        run_with_timeout "pip install --user -r \"$SOURCE_DIR/requirements.txt\"" $INSTALL_TIMEOUT "Retrying installation" false
+        run_with_timeout "pip install -r requirements.txt" $INSTALL_TIMEOUT "Retrying installation" false
     fi
 fi
 
-# Install application files
-install_app_files
+# Create necessary directories
+echo -e "\n${BLUE}Creating directory structure...${NC}"
+progress "Creating logs directory" "mkdir -p logs"
+progress "Creating data directory" "mkdir -p data"
+progress "Creating backup directory" "mkdir -p backup"
 
-# Setup configuration
-setup_configuration
-
-# Check PATH
-check_path
-
-echo -e "\n${GREEN}Installation completed successfully!${NC}"
-echo -e "\n${YELLOW}Installation locations:${NC}"
-echo -e "Application files: ${BLUE}$APP_DATA_DIR${NC}"
-echo -e "Configuration:     ${BLUE}$APP_CONFIG_DIR${NC}"
-echo -e "Cache:            ${BLUE}$APP_CACHE_DIR${NC}"
-echo -e "Command:          ${BLUE}$XDG_BIN_HOME/addarr${NC}"
-
-echo -e "\n${YELLOW}Next steps:${NC}"
-echo -e "1. Run the setup wizard to configure Addarr:"
-echo -e "   ${BLUE}addarr --setup${NC}"
-echo -e "2. Start the bot:"
-echo -e "   ${BLUE}addarr${NC}"
-
-if ! check_path; then
-    echo -e "\n${YELLOW}Note: After updating your PATH, you'll need to restart your terminal${NC}"
+# Check if config.yaml exists
+if [ ! -f config.yaml ]; then
+    echo -e "\n${YELLOW}No config.yaml found. Creating from example...${NC}"
+    if [ -f config_example.yaml ]; then
+        progress "Creating config.yaml" "cp config_example.yaml config.yaml"
+        echo -e "${GREEN}✓ Created config.yaml${NC}"
+        echo -e "${YELLOW}Please edit config.yaml with your settings${NC}"
+    else
+        echo -e "${RED}✗ config_example.yaml not found${NC}"
+    fi
 fi
 
-echo -e "\n${YELLOW}For more information, visit:${NC}"
-echo -e "${BLUE}https://github.com/cyneric/addarr/wiki${NC}"
+echo -e "\n${GREEN}Installation completed!${NC}"
+echo -e "\n${BLUE}Starting setup wizard...${NC}"
+
+# Start the setup wizard
+python run.py --setup
