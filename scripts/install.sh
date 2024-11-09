@@ -445,9 +445,8 @@ echo -e "   • Config File: ${GREEN}$INSTALL_DIR/config.yaml${NC}"
 echo -e "   • Log Directory: ${GREEN}$INSTALL_DIR/logs${NC}"
 
 echo -e "\n${BLUE}🚀 Next Steps:${NC}"
-echo -e "   1. Run setup wizard: ${YELLOW}addarr --setup${NC}"
-echo -e "   2. Start Addarr: ${YELLOW}addarr${NC}"
-echo -e "   3. Stop Addarr: ${YELLOW}Ctrl+C${NC}"
+echo -e "   1. Start Addarr: ${YELLOW}addarr${NC} (on first run, setup wizard will start automatically)"
+echo -e "   2. Stop Addarr: ${YELLOW}Ctrl+C${NC}"
 
 echo -e "\n${BLUE}📚 Documentation:${NC}"
 echo -e "   • GitHub Wiki: ${YELLOW}https://github.com/cyneric/addarr/wiki${NC}"
