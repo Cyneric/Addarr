@@ -516,9 +516,18 @@ install_python_venv() {
     echo -e "${YELLOW}Installing python3-venv...${NC}"
     case "$(get_system_info)" in
         "ubuntu"|"debian")
-            if ! sudo apt-get update && sudo apt-get install -y python3-venv; then
-                echo -e "${RED}Failed to install python3-venv${NC}"
-                return 1
+            # Get Python version
+            PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | cut -d' ' -f2 | cut -d'.' -f1,2)
+            echo -e "${BLUE}Detected Python version: $PYTHON_VERSION${NC}"
+            
+            # Try version-specific package first
+            if ! sudo apt-get update && sudo apt-get install -y "python${PYTHON_VERSION}-venv"; then
+                echo -e "${YELLOW}Failed to install python${PYTHON_VERSION}-venv, trying generic package...${NC}"
+                # Fallback to generic package
+                if ! sudo apt-get install -y python3-venv; then
+                    echo -e "${RED}Failed to install python3-venv${NC}"
+                    return 1
+                fi
             fi
             ;;
         "fedora")
