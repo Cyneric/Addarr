@@ -71,16 +71,16 @@ else
 
     # Download files with error checking
     files_to_download=(
-        "https://raw.githubusercontent.com/cyneric/addarr/main/requirements.txt:$SOURCE_DIR/requirements.txt"
-        "https://raw.githubusercontent.com/cyneric/addarr/main/src/run.py:$SOURCE_DIR/src/run.py"
-        "https://raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml:$SOURCE_DIR/config_example.yaml"
+        "raw.githubusercontent.com/cyneric/addarr/main/requirements.txt:$SOURCE_DIR/requirements.txt"
+        "raw.githubusercontent.com/cyneric/addarr/main/src/run.py:$SOURCE_DIR/src/run.py"
+        "raw.githubusercontent.com/cyneric/addarr/main/config_example.yaml:$SOURCE_DIR/config_example.yaml"
     )
 
     download_failed=0
     for file_pair in "${files_to_download[@]}"; do
         url="${file_pair%%:*}"
         output="${file_pair#*:}"
-        if ! download_file "$url" "$output"; then
+        if ! download_file "https://$url" "$output"; then
             download_failed=1
         fi
     done
