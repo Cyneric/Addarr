@@ -44,14 +44,16 @@ class HelpHandler:
             "🤖 *Available Commands:*\n\n"
             "🎬 */movie* - Search and add movies\n"
             "📺 */series* - Search and add TV shows\n"
-            "🎵 */music* - Search and add music\n"
+            "🎵 */music* - Search and add music\n\n"
+
+            "🚫 */cancel* - Cancel current action\n"
             "❌ */delete* - Delete media\n"
             "📊 */status* - Check system status\n"
-            "⚙️ */settings* - Manage settings\n"
+            "⚙️ */settings* - Manage settings\n\n"
 
             "🚀 */allSeries* - Show all series\n"
             "🎬 */allMovies* - Show all movies\n"
-            "🎵 */allMusic* - Show all music\n"
+            "🎵 */allMusic* - Show all music\n\n"
 
             "❓ */help* - Show this help message\n\n"
 
