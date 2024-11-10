@@ -31,19 +31,19 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
                 callback_data="menu_music"
             ),
             InlineKeyboardButton(
-                f"🗑 {translation.get_text('Delete')}", 
-                callback_data="menu_delete"
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                f"⚙️ {translation.get_text('Settings')}", 
-                callback_data="menu_settings"
-            ),
-            InlineKeyboardButton(
                 f"📊 {translation.get_text('Status')}", 
                 callback_data="menu_status"
             ),
+        ],
+        [
+            # InlineKeyboardButton(
+            #     f"🗑 {translation.get_text('Delete')}", 
+            #     callback_data="menu_delete"
+            # ),
+              # InlineKeyboardButton(
+            #     f"⚙️ {translation.get_text('Settings')}", 
+            #     callback_data="menu_settings"
+            # ),
         ],
         [
             InlineKeyboardButton(
@@ -60,17 +60,8 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
 
 def get_system_keyboard() -> InlineKeyboardMarkup:
     """Get system status keyboard"""
-    translation = TranslationService()
-    keyboard = [
-        [
-            InlineKeyboardButton("🔄 Refresh", callback_data="system_refresh"),
-            InlineKeyboardButton("📊 Details", callback_data="system_details")
-        ],
-        [
-            InlineKeyboardButton("🔙 Back", callback_data="system_back")
-        ]
-    ]
-    return InlineKeyboardMarkup(keyboard)
+    # Return empty keyboard - no buttons needed
+    return None
 
 def get_settings_keyboard() -> InlineKeyboardMarkup:
     """Get settings menu keyboard"""
@@ -89,12 +80,6 @@ def get_settings_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(
                 f"🌐 {translation.get_text('Language')}", 
                 callback_data="settings_language"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "🔙 Back", 
-                callback_data="menu_back"
             )
         ]
     ]
@@ -116,14 +101,6 @@ def get_confirmation_keyboard(action: str) -> InlineKeyboardMarkup:
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
-
-def get_back_keyboard() -> InlineKeyboardMarkup:
-    """Get simple back to menu keyboard"""
-    keyboard = [
-        [InlineKeyboardButton("🔙 Back", callback_data="menu_back")]
-    ]
-    return InlineKeyboardMarkup(keyboard) 
-
 
 def get_yes_no_keyboard(callback_prefix: str, yes_text: str = "Yes", no_text: str = "No") -> InlineKeyboardMarkup:
     """Create a Yes/No inline keyboard

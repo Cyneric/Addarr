@@ -11,7 +11,7 @@ from colorama import Fore
 
 from src.utils.logger import get_logger, log_user_interaction
 from src.bot.handlers.auth import require_auth
-from src.bot.keyboards import get_system_keyboard, get_back_keyboard
+from src.bot.keyboards import get_system_keyboard
 
 logger = get_logger("addarr.system")
 
@@ -48,12 +48,3 @@ class SystemHandler:
         action = query.data.replace("system_", "")
         
         log_user_interaction(logger, query.from_user, f"system_{action}")
-        
-        # Handle different system actions
-        if action == "refresh":
-            await self.refresh_status(query)
-        elif action == "back":
-            await query.message.edit_text(
-                "Returning to main menu...",
-                reply_markup=get_back_keyboard()
-            )

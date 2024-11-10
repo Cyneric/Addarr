@@ -20,7 +20,7 @@ from colorama import Fore
 
 from src.utils.logger import get_logger, log_user_interaction
 from src.bot.handlers.auth import require_auth
-from src.bot.handlers.media import MediaHandler, SEARCHING
+from src.bot.handlers.media import MediaHandler, SEARCHING, SELECTING
 from src.bot.handlers.help import HelpHandler
 from src.bot.keyboards import get_main_menu_keyboard
 from src.services.translation import TranslationService
@@ -53,6 +53,20 @@ class StartHandler:
                             self.media_handler.handle_search
                         ),
                         CallbackQueryHandler(self.handle_menu_selection, pattern="^menu_")
+                    ],
+                    SELECTING: [
+                        CallbackQueryHandler(
+                            self.media_handler.handle_selection,
+                            pattern="^select_"
+                        ),
+                        CallbackQueryHandler(
+                            self.media_handler.handle_navigation,
+                            pattern="^nav_"
+                        ),
+                        CallbackQueryHandler(
+                            self.handle_menu_selection,
+                            pattern="^menu_"
+                        )
                     ]
                 },
                 fallbacks=[
@@ -114,11 +128,8 @@ class StartHandler:
             
         if action == "cancel":
             logger.info(f"Cancel action triggered by user {user.first_name} (ID: {user.id})")
-            # Clean up any user data that might have been set
             if context.user_data:
                 context.user_data.clear()
-                
-            # Edit the message to show cancellation
             await query.message.edit_text(
                 self.translation.get_text("Canceled")
             )
@@ -152,21 +163,21 @@ class StartHandler:
             
             return SEARCHING
             
-        elif action == "delete":
-            logger.info(f"Delete menu opened by user {user.first_name} (ID: {user.id})")
-            delete_text = self.translation.get_text("messages.DeletePrompt")
-            await query.message.edit_text(delete_text)
-        elif action == "status":
-            logger.info(f"Status check requested by user {user.first_name} (ID: {user.id})")
-            await self.media_handler.handle_status(update, context)
-        elif action == "settings":
-            logger.info(f"Settings menu opened by user {user.first_name} (ID: {user.id})")
-            await self.media_handler.handle_settings(update, context)
-        elif action == "help":
-            logger.info(f"Help requested by user {user.first_name} (ID: {user.id})")
-            await self.help_handler.show_help(update, context)
-        else:
-            logger.warning(f"Unknown menu action '{action}' from user {user.first_name} (ID: {user.id})")
+        # For commands that end the conversation
+        if action in ["status", "help", "settings", "delete"]:
+            if action == "status":
+                await self.media_handler.handle_status(update, context)
+            elif action == "help":
+                await self.help_handler.show_help(update, context)
+            elif action == "settings":
+                await self.media_handler.handle_settings(update, context)
+            elif action == "delete":
+                delete_text = self.translation.get_text("messages.DeletePrompt")
+                await query.message.edit_text(delete_text)
+            return ConversationHandler.END
+            
+        logger.warning(f"Unknown menu action '{action}' from user {user.first_name} (ID: {user.id})")
+        return ConversationHandler.END
     
     async def start_movie_search(self, query):
         """Start movie search conversation"""

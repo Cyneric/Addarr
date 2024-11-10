@@ -13,7 +13,7 @@ from colorama import Fore
 
 from src.utils.logger import get_logger, log_user_interaction
 from src.bot.handlers.auth import require_auth
-from src.bot.keyboards import get_back_keyboard, get_main_menu_keyboard
+from src.bot.keyboards import get_main_menu_keyboard
 from src.services.translation import TranslationService
 
 logger = get_logger("addarr.help")
@@ -48,7 +48,20 @@ class HelpHandler:
             "❌ */delete* - Delete media\n"
             "📊 */status* - Check system status\n"
             "⚙️ */settings* - Manage settings\n"
+
+            "🚀 */allSeries* - Show all series\n"
+            "🎬 */allMovies* - Show all movies\n"
+            "🎵 */allMusic* - Show all music\n"
+
             "❓ */help* - Show this help message\n\n"
+
+
+            "📖 Wiki: https://github.com/Cyneric/addarr/wiki\n"
+            "🐞 Issues: https://github.com/Cyneric/addarr/issues\n"
+            "🔗 Repository: https://github.com/Cyneric/addarr\n\n"
+
+            "👨‍💻 Author: Christian Blank (https://github.com/Cyneric)\n\n"
+            "🔄 Version: 0.1.0\n"
         )
         
         # Handle both direct commands and callback queries
@@ -57,14 +70,12 @@ class HelpHandler:
                 help_text,
                 parse_mode='Markdown',
                 disable_web_page_preview=True,
-                reply_markup=get_back_keyboard()
             )
         else:
             await update.message.reply_text(
                 help_text,
                 parse_mode='Markdown',
                 disable_web_page_preview=True,
-                reply_markup=get_back_keyboard()
             )
     
     @require_auth
