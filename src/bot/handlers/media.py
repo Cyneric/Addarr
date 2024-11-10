@@ -53,6 +53,10 @@ class MediaHandler:
                         MessageHandler(
                             filters.TEXT & ~filters.COMMAND,
                             self.handle_search
+                        ),
+                        CallbackQueryHandler(
+                            self.handle_menu_callback,
+                            pattern="^menu_cancel$"
                         )
                     ],
                     SELECTING: [
@@ -63,12 +67,20 @@ class MediaHandler:
                         CallbackQueryHandler(
                             self.handle_navigation,
                             pattern="^nav_"
+                        ),
+                        CallbackQueryHandler(
+                            self.handle_menu_callback,
+                            pattern="^menu_cancel$"
                         )
                     ],
                     QUALITY_SELECT: [
                         CallbackQueryHandler(
                             self.handle_quality_selection,
                             pattern="^quality_"
+                        ),
+                        CallbackQueryHandler(
+                            self.handle_menu_callback,
+                            pattern="^menu_cancel$"
                         )
                     ],
                     SEASON_SELECT: [
@@ -81,14 +93,14 @@ class MediaHandler:
                             pattern="^season_confirm$"
                         ),
                         CallbackQueryHandler(
-                            self.cancel_search,
-                            pattern="^select_cancel$"
+                            self.handle_menu_callback,
+                            pattern="^menu_cancel$"
                         )
                     ]
                 },
                 fallbacks=[
                     CommandHandler("cancel", self.cancel_search),
-                    CallbackQueryHandler(self.cancel_search, pattern="^select_cancel$")
+                    CallbackQueryHandler(self.handle_menu_callback, pattern="^menu_cancel$")
                 ],
                 name="media_conversation",
                 persistent=False
@@ -105,15 +117,31 @@ class MediaHandler:
         query = update.callback_query
         action = query.data.replace("menu_", "")
         
+        # Handle cancel action
+        if action == "cancel":
+            await query.message.edit_text(
+                self.translation.get_text("Canceled")
+            )
+            return ConversationHandler.END
+        
         # Set search type in context
         context.user_data["search_type"] = action
         
         # Get translated prompt
         prompt = self.translation.get_text("Title")
-        cancel_hint = self.translation.get_text("messages.CancelHint", default="(Use /cancel to cancel)")
+        
+        # Create keyboard with cancel button
+        keyboard = [
+            [InlineKeyboardButton(
+                f"❌ {self.translation.get_text('Cancel')}", 
+                callback_data="menu_cancel"
+            )]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.message.edit_text(
-            f"{prompt}\n{cancel_hint}"
+            prompt,
+            reply_markup=reply_markup
         )
         
         return SEARCHING
@@ -128,10 +156,19 @@ class MediaHandler:
         
         context.user_data["search_type"] = "movie"
         prompt = self.translation.get_text("Title")
-        cancel_hint = self.translation.get_text("messages.CancelHint", default="(Use /cancel to cancel)")
+        
+        # Create keyboard with cancel button
+        keyboard = [
+            [InlineKeyboardButton(
+                f"❌ {self.translation.get_text('Cancel')}", 
+                callback_data="menu_cancel"
+            )]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            f"{prompt}\n{cancel_hint}"
+            prompt,
+            reply_markup=reply_markup
         )
         return SEARCHING
     
@@ -145,10 +182,19 @@ class MediaHandler:
         
         context.user_data["search_type"] = "series"
         prompt = self.translation.get_text("Title")
-        cancel_hint = self.translation.get_text("messages.CancelHint", default="(Use /cancel to cancel)")
+        
+        # Create keyboard with cancel button
+        keyboard = [
+            [InlineKeyboardButton(
+                f"❌ {self.translation.get_text('Cancel')}", 
+                callback_data="menu_cancel"
+            )]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            f"{prompt}\n{cancel_hint}"
+            prompt,
+            reply_markup=reply_markup
         )
         return SEARCHING
     
@@ -162,10 +208,19 @@ class MediaHandler:
         
         context.user_data["search_type"] = "music"
         prompt = self.translation.get_text("Title")
-        cancel_hint = self.translation.get_text("messages.CancelHint", default="(Use /cancel to cancel)")
+        
+        # Create keyboard with cancel button
+        keyboard = [
+            [InlineKeyboardButton(
+                f"❌ {self.translation.get_text('Cancel')}", 
+                callback_data="menu_cancel"
+            )]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            f"{prompt}\n{cancel_hint}"
+            prompt,
+            reply_markup=reply_markup
         )
         return SEARCHING
     
