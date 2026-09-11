@@ -1,20 +1,18 @@
-# filename: docker-compose.yml
-# author: Christian Blank (https://github.com/Cyneric)
-# created date: 2024-11-08
-# description: Docker compose file for Addarr Refresh Telegram Bot.
-
-version: '3'
 services:
   addarr:
-    container_name: addarr-refresh
+    # Before the first published release: docker compose build
+    image: ghcr.io/cyneric/addarr:${ADDARR_VERSION:-2.0.0a1}
     build: .
     restart: unless-stopped
-    network_mode: host
+    init: true
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${ADDARR_BIND:-127.0.0.1}:${ADDARR_PORT:-8090}:8090"
     volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - ./chatid.txt:/app/chatid.txt:rw
-      - ./admin.txt:/app/admin.txt:ro
-      - ./allowlist.txt:/app/allowlist.txt:ro
-      - ./logs:/app/logs:rw
-    environment:
-      - PYTHONPATH=/app
+      - ${ADDARR_CONFIG:-./config}:/config
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 45s
