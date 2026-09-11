@@ -1,0 +1,10 @@
+{#
+Filename: health.html
+Author: Christian Blank
+Created Date: 2026-09-11
+Description: Service and worker status fragment refreshed by HTMX.
+#}
+<div class="grid two">
+  <div class="card"><h2>{{ t('services') }}</h2><pre>{{ health|tojson(indent=2) }}</pre></div>
+  <div class="card"><h2>Telegram / worker</h2><pre>{{ worker|tojson(indent=2) }}</pre></div>
+</div>

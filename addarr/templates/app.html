@@ -1,0 +1,167 @@
+{#
+Filename: app.html
+Author: Christian Blank
+Created Date: 2026-09-11
+Description: Shared page layout and administration screens.
+#}
+<!doctype html>
+<html lang="{{ locale[:2] }}">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
+  <title>Addarr · {{ t(section) }}</title>
+  <meta name="theme-color" content="#111215">
+  <link rel="icon" href="/static/logos/addarr.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css"><script src="/static/htmx.min.js" defer></script><script src="/static/app.js" defer></script>
+</head>
+<body>
+{% from 'icons.html' import icon, brand, app_logo %}
+{% from 'service_choices.html' import choice, allowed_choice with context %}
+{% macro csrf_input() %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
+{% macro action(url, label, style='') %}<form method="post" action="{{ url }}" class="inline">{{ csrf_input() }}<button class="{{ style }}">{{ t(label) }}</button></form>{% endmacro %}
+{% macro language_picker() %}<details class="language"><summary>{{ icon('globe') }}<span>{{ locale[:2]|upper }}</span></summary><div>{% for code,label in languages %}<a href="?lang={{ code }}" lang="{{ code[:2] }}" {{ 'aria-current=page' if code == locale else '' }}>{{ label }}</a>{% endfor %}</div></details>{% endmacro %}
+{% set public = section in ['login','setup','error'] %}
+<a class="skip-link" href="#content">{{ t('skip_content') }}</a>
+{% if not public %}
+<aside class="sidebar" id="navigation">
+  <div class="sidebar-brand">{{ brand() }}<span class="version">v2</span></div>
+  <div class="workspace-label"><span class="dot online"></span>{{ t('private') }}</div>
+  <nav aria-label="{{ t('navigation') }}">
+  <p class="nav-label">{{ t('workspace') }}</p>
+  {% for key, href in [('dashboard','/'),('requests','/requests'),('users','/users'),('services','/services'),('settings','/settings'),('migration','/migration'),('diagnostics','/diagnostics')] %}
+    {% if key == 'services' %}<p class="nav-label nav-divider">{{ t('manage') }}</p>{% endif %}
+    <a href="{{ href }}" class="{{ 'selected' if section == key else '' }}" {{ 'aria-current=page' if section == key else '' }}>{{ icon(key) }}<span>{{ t(key) }}</span>{% if section == 'dashboard' and key == 'requests' and counts.get('pending',0) %}<span class="nav-count">{{ counts.pending }}</span>{% endif %}</a>
+  {% endfor %}
+  </nav>
+  <div class="sidebar-bottom"><div class="sidebar-note">{{ icon('movie') }}{{ icon('series') }}{{ icon('music') }}</div>{{ action('/backup','backup','quiet') }}<form action="/logout" method="post">{{ csrf_input() }}<button class="quiet">{{ icon('logout') }}{{ t('logout') }}</button></form><small>Addarr v{{ version }}</small></div>
+</aside>
+<button class="nav-scrim" tabindex="-1" aria-label="{{ t('close_menu') }}" hidden></button>
+{% endif %}
+<main id="content" class="{{ 'public' if public else 'admin-main' }} {{ 'auth-page' if section in ['login','setup'] else '' }}">
+  {% if section not in ['login','setup'] %}
+  <div class="topbar"><div><button class="menu-toggle icon-button" aria-label="{{ t('navigation') }}" aria-expanded="false" aria-controls="navigation">{{ icon('menu') }}</button><span>Addarr</span><span class="breadcrumb-divider">/</span><span>{{ t(section) }}</span></div>{{ language_picker() }}</div>
+  <div class="page-content">
+  <header class="page-heading"><div><p class="eyebrow">{{ t('workspace') }}</p><h1>{{ t(section) }}</h1>{% if section~'_intro' in ['dashboard_intro','requests_intro','users_intro','services_intro','settings_intro','migration_intro','diagnostics_intro'] %}<p class="page-description">{{ t(section~'_intro') }}</p>{% endif %}</div><span class="section-emblem">{{ icon(section) }}</span></header>
+  {% endif %}
+  {% if section == 'error' %}
+  <section class="card"><h2>{{ error }}</h2><p>{{ detail }}</p><a class="button" href="/">{{ t('back') }}</a></section>
+  {% elif section in ['login','setup'] %}
+  <section class="auth-story" aria-label="{{ t('private') }}">
+    <div class="story-brand">{{ brand() }}<span class="edition">{{ t('private') }}</span></div>
+    <div class="story-content"><div class="media-tags"><span>{{ icon('movie') }}{{ t('movie') }}</span><span>{{ icon('series') }}{{ t('series') }}</span><span>{{ icon('music') }}{{ t('music') }}</span></div><h2>{{ t('story_title') }}<em>{{ t('story_accent') }}</em></h2><p>{{ t('story_description') }}</p></div>
+    <div class="story-footer"><span class="frame-corner"></span><span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+  </section>
+  <section class="auth-panel">
+  <div class="auth-top"><span class="auth-mobile-brand">{{ brand() }}</span><span class="edition">{{ t('admin') }}</span>{{ language_picker() }}</div>
+  <div class="auth-card">
+    <div class="auth-kicker"><span class="mini-play">{{ icon('play') }}</span>Addarr</div>
+    <h1>{{ t('setup') if section == 'setup' else t('login') }}</h1><p class="auth-description">{{ t('setup_description') if section == 'setup' else t('login_description') }}</p>
+    {% if section == 'setup' %}<ol class="setup-progress" aria-label="{{ t('setup') }}"><li class="current" aria-current="step"><span>1</span>{{ t('account') }}</li><li><span>2</span>{{ t('services') }}</li><li><span>3</span>Telegram</li></ol>{% endif %}
+    <form method="post" action="/{{ section }}" class="stack auth-form">
+      {{ csrf_input() }}
+      {% if section == 'setup' %}<div class="token-field"><label for="bootstrap">{{ t('setup_key') }}<span class="label-badge">{{ icon('lock') }}{{ t('one_time') }}</span></label><input id="bootstrap" name="bootstrap" type="password" required autocomplete="off" aria-describedby="bootstrap-help"><p class="field-help" id="bootstrap-help">{{ t('setup_key_help') }} <code>/config/bootstrap-token</code></p></div>{% endif %}
+      <label>{{ t('username') }}<input name="username" required maxlength="100" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <div><label for="password">{{ t('password_label') }}</label><div class="password-field"><input id="password" name="password" type="password" required {{ 'minlength=12 aria-describedby=password-help' if section == 'setup' else '' }} maxlength="1024" autocomplete="{{ 'new-password' if section == 'setup' else 'current-password' }}"><button type="button" class="password-toggle icon-button" aria-label="{{ t('show_password') }}" aria-pressed="false">{{ icon('eye') }}</button></div>{% if section == 'setup' %}<p class="field-help" id="password-help">{{ t('password_help') }}</p>{% endif %}</div>
+      <button class="primary auth-submit">{{ t('create_account') if section == 'setup' else t('login') }}{{ icon('arrow') }}</button>
+    </form>
+
+  </div>
+  <div class="auth-bottom"><span>Addarr <span class="muted">v{{ version }}</span></span></div>
+  </section>
+  {% elif section == 'dashboard' %}
+  <section class="dashboard-feature"><div><p class="eyebrow">Telegram</p><h2>{{ t('requests') }}</h2><p>{{ t('dashboard_feature') }}</p><a href="/requests" class="button primary">{{ t('view_requests') }}{{ icon('arrow') }}</a></div><div class="feature-categories" aria-hidden="true">{{ icon('movie') }}{{ icon('series') }}{{ icon('music') }}</div></section>
+  <section class="stats">
+    {% for key in ['pending','queued','submitted','available'] %}<a class="card stat {{ key }}" href="/requests"><span><span class="status-dot"></span>{{ t(key) }}</span><strong>{{ '%02d'|format(counts.get(key,0)) }}</strong>{{ icon('external') }}</a>{% endfor %}
+  </section>
+  <div class="section-title"><h2>{{ t('your_services') }}</h2><a class="text-link" href="/services">{{ t('manage') }}{{ icon('arrow') }}</a></div>
+  <section class="service-grid">
+    {% for kind, category, glyph in [('radarr','movie','movie'),('sonarr','series','series'),('lidarr','music','music')] %}<a href="/services#{{ kind }}" class="card service-tile {{ kind }}"><div class="service-art">{{ app_logo(kind) }}<span>{{ t(category) }}</span></div><div class="service-tile-info"><div><h3>{{ kind|capitalize }}</h3><span class="service-meta">{{ health.get(kind,{}).get('version','') or t('service_connection') }}</span></div><span class="dot {{ 'online' if health.get(kind,{}).get('ok') else '' }}" aria-label="{{ t('active') if health.get(kind,{}).get('ok') else t('disconnected') }}"></span></div><div class="service-tile-footer"><span>{{ t('active') if health.get(kind,{}).get('ok') else t('disconnected') }}</span>{{ icon('external') }}</div></a>{% endfor %}
+  </section>
+  <section class="grid dashboard-bottom">
+    <div class="card recent-card"><div class="section-title"><h2>{{ t('recent_requests') }}</h2><a class="text-link" href="/requests">{{ t('view_all') }}{{ icon('arrow') }}</a></div>{% for row in recent_requests %}<a href="/requests" class="recent-row"><span class="request-art {{ row.media.service }}">{{ icon({'radarr':'movie','sonarr':'series','lidarr':'music'}.get(row.media.service,'movie')) }}</span><div><strong>{{ row.media.title }}</strong><span>{{ row.name }} · {{ row.media.service|capitalize }}</span></div><span class="pill {{ 'good' if row.state == 'available' else '' }}">{{ t(row.state) }}</span></a>{% else %}<div class="empty compact"><span class="empty-icon">{{ icon('requests') }}</span><h3>{{ t('no_requests') }}</h3><p>{{ t('requests_empty_hint') }}</p><a class="text-link" href="/settings">{{ t('connect_telegram') }}{{ icon('arrow') }}</a></div>{% endfor %}</div>
+    <div class="card telegram-card"><div class="section-title"><span class="telegram-icon">{{ app_logo('telegram') }}</span><span class="pill {{ 'good' if online else '' }}">{{ t('active') if online else t('disconnected') }}</span></div><h2>Telegram</h2><p>{{ t('telegram_description') }}</p><a class="text-link" href="/settings">{{ t('settings') if online else t('connect_telegram') }}{{ icon('arrow') }}</a><a class="telegram-users" href="/users">{{ icon('users') }}<span>{{ t('users') }} · {{ t('pending') }}</span><strong>{{ pending_users }}</strong></a></div>
+  </section>
+  <section class="callout"><span class="callout-icon">{{ icon('migration') }}</span><div><h3>{{ t('migration') }}</h3><p>{{ t('migration_hint') }}</p></div><a class="button" href="/migration">{{ t('preview') }}{{ icon('arrow') }}</a></section>
+  {% elif section == 'requests' %}
+  <section class="request-list">
+    {% for row in requests %}
+    <article class="card request"><div class="request-top"><span class="eyebrow">#{{ row.id }} / {{ row.media.service|upper }}</span><span class="pill {{ 'good' if row.state == 'available' else '' }}">{{ t(row.state) }}</span></div><h2>{{ row.media.title }}</h2><p>{{ row.name }} · {{ row.progress }}</p>
+      {% if row.error %}<details class="error-detail"><summary>{{ t('diagnostics') }}</summary><p>{{ row.error }}</p></details>{% endif %}
+      <div class="actions">{% if row.state == 'pending' %}{{ action('/requests/'~row.id~'/approve','approve','primary') }}{{ action('/requests/'~row.id~'/reject','reject') }}{% endif %}{% if row.state == 'failed' %}{{ action('/requests/'~row.id~'/retry','retry') }}{% endif %}{% if row.state in ['pending','queued'] %}{{ action('/requests/'~row.id~'/cancel','cancel','quiet') }}{% endif %}</div>
+    </article>
+    {% else %}<div class="empty card"><span class="empty-icon">{{ icon('requests') }}</span><h2>{{ t('no_requests') }}</h2><p>{{ t('requests_empty_hint') }}</p><a class="button primary" href="/settings">{{ t('connect_telegram') }}{{ icon('arrow') }}</a></div>{% endfor %}
+  </section>
+  <div class="actions">{% if offset > 0 %}<a class="button" href="?offset={{ [0,offset-50]|max }}">←</a>{% endif %}{% if requests|length == 50 %}<a class="button" href="?offset={{ offset+50 }}">→</a>{% endif %}</div>
+  {% elif section == 'users' %}
+  <div class="toolbar">{{ action('/invite','invite','primary') }}</div>
+  {% if invite %}<section class="card"><p>{{ t('invite') }}</p><code>{{ invite }}</code></section>{% endif %}
+  <section class="grid two">
+    {% for user in users %}<article class="card"><h2>{{ user.name }}</h2><p class="muted">Telegram ID · {{ user.id }}</p><form method="post" action="/users/{{ user.id }}" class="stack">{{ csrf_input() }}
+      <div class="fields"><label>{{ t('status') }}<select name="status">{% for state in ['pending','active','revoked'] %}<option value="{{ state }}" {{ 'selected' if user.status == state else '' }}>{{ t(state) }}</option>{% endfor %}</select></label>
+      <label>{{ t('role') }}<select name="role">{% for role in ['member','admin'] %}<option value="{{ role }}" {{ 'selected' if user.role == role else '' }}>{{ t(role) }}</option>{% endfor %}</select></label></div>
+      <label>{{ t('language') }}<select name="locale">{% for code,label in languages %}<option value="{{ code }}" {{ 'selected' if user.locale == code else '' }}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="check"><input type="checkbox" name="auto_approve" {{ 'checked' if user.auto_approve else '' }}>{{ t('auto_approve') }}</label><button>{{ t('save') }}</button>
+    </form></article>{% else %}<div class="empty card">{{ t('no_users') }}</div>{% endfor %}
+  </section>
+  {% elif section == 'services' %}
+  <nav class="service-picker" aria-label="{{ t('services') }}">{% for kind,category in [('radarr','movie'),('sonarr','series'),('lidarr','music')] %}<a href="#{{ kind }}" data-service="{{ kind }}">{{ app_logo(kind) }}<strong>{{ kind|capitalize }}</strong><span>{{ t(category) }}</span></a>{% endfor %}</nav>
+  <section class="stack service-panels" data-active-service="{{ active_service }}">
+  {% for kind, config in configs.items() %}
+    {% set caps = capabilities.get(kind,{}) %}
+    <article class="card service-config" id="{{ kind }}"><div class="section-title"><div class="service-heading"><span class="service-badge {{ kind }}">{{ app_logo(kind) }}</span><div><h2>{{ kind|capitalize }}</h2><p class="muted">{{ t({'radarr':'movie','sonarr':'series','lidarr':'music'}[kind]) }}</p></div></div><span class="eyebrow">{{ caps.get('version','') }}</span></div>
+    <form method="post" action="/services/{{ kind }}" class="stack">{{ csrf_input() }}
+      <label class="check"><input name="enabled" type="checkbox" {{ 'checked' if config.get('enabled',True) else '' }}>{{ t('enabled') }}</label>
+      <div class="fields"><label>URL<input name="url" type="url" value="{{ config.get('url','') }}" placeholder="http://192.168.1.10:{{ {'radarr':7878,'sonarr':8989,'lidarr':8686}[kind] }}" required></label>
+      <label>API key<input name="api_key" type="password" autocomplete="off" placeholder="{{ '••••••••' if config.get('api_key') else '' }}"></label></div>
+      <p class="field-help">{{ t('service_key_help') }}</p>
+      <div class="actions"><button name="action" value="test">{{ icon('services') }}{{ t('test') }}</button>{% if caps %}<span class="connection-success">{{ icon('check') }}{{ t('connection_verified') }}</span>{% endif %}</div>
+      <div class="form-section-title"><h3>{{ t('request_defaults') }}</h3><p>{{ t('defaults_help') }}</p></div>
+      {% if kind in unavailable %}<p class="choices-notice" role="status">{{ t('choices_unavailable') }}</p>{% elif not caps %}<p class="choices-notice">{{ t('connect_for_choices') }}</p>{% endif %}
+      <div class="fields">
+        {{ choice('quality_profile', 'profile', caps.get('profiles',[]), 'id', 'name', config.get('quality_profile'), caps) }}
+        {{ choice('root_folder', 'folder', caps.get('folders',[]), 'path', 'path', config.get('root_folder'), caps) }}
+        {% if kind == 'lidarr' %}{{ choice('metadata_profile', 'metadata', caps.get('metadata',[]), 'id', 'name', config.get('metadata_profile'), caps) }}{% endif %}
+      </div>
+      {% if caps %}<details><summary>{{ t('allowed') }}</summary><div class="fields">
+        {{ allowed_choice('allowed_profiles', 'profile', caps.profiles, 'id', 'name', config.get('allowed_profiles',[])) }}
+        {{ allowed_choice('allowed_folders', 'folder', caps.folders, 'path', 'path', config.get('allowed_folders',[])) }}
+      </div></details>{% else %}{% for profile in config.get('allowed_profiles',[]) %}<input type="hidden" name="allowed_profiles" value="{{ profile }}">{% endfor %}{% for folder in config.get('allowed_folders',[]) %}<input type="hidden" name="allowed_folders" value="{{ folder }}">{% endfor %}{% endif %}
+      <label class="check"><input name="search" type="checkbox" {{ 'checked' if config.get('search',True) else '' }}>{{ t('search_after_add') }}</label>
+      <details><summary>{{ t('advanced') }}</summary><div class="fields"><label>{{ t('username') }}<input name="username" value="{{ config.get('username','') }}" autocomplete="off"></label><label>{{ t('password_label') }}<input name="password" type="password" autocomplete="off"></label></div>
+      <label>Tags<input name="tags" value="{{ config.get('tags',[])|join(',') }}"></label><label class="check"><input name="requester_tag" type="checkbox" {{ 'checked' if config.get('requester_tag') else '' }}>{{ t('requester_tag') }}</label>
+      {% if kind == 'sonarr' %}<label class="check"><input name="season_folder" type="checkbox" {{ 'checked' if config.get('season_folder',True) else '' }}>{{ t('season_folders') }}</label>{% elif config.get('season_folder',True) %}<input type="hidden" name="season_folder" value="on">{% endif %}
+      {% if kind == 'radarr' %}<label>{{ t('minimum_availability') }}<select name="minimum_availability">{% for option in ['released','inCinemas','announced'] %}<option value="{{ option }}" {{ 'selected' if config.get('minimum_availability','released') == option else '' }}>{{ t(option) }}</option>{% endfor %}</select></label>{% else %}<input type="hidden" name="minimum_availability" value="{{ config.get('minimum_availability','released') }}">{% endif %}</details>
+      <button class="primary" name="action" value="save">{{ t('save') }}</button>
+    </form></article>
+  {% endfor %}
+  </section>
+  {% elif section == 'settings' %}
+  <section class="card"><h2>{{ t('requests') }}</h2><form action="/settings/requests" method="post" class="stack">{{ csrf_input() }}
+    <label class="check"><input name="auto_approve_all" type="checkbox" {{ 'checked' if auto_approve_all else '' }} aria-describedby="auto-approve-help">{{ t('auto_approve_all') }}</label>
+    <p class="field-help" id="auto-approve-help">{{ t('auto_approve_all_help') }}</p>
+    <button class="primary">{{ t('save') }}</button>
+  </form></section>
+  <section class="card settings-card"><div class="service-heading"><span class="telegram-icon">{{ app_logo('telegram') }}</span><div><h2>Telegram</h2></div></div><form action="/settings" method="post" class="stack">{{ csrf_input() }}
+    <div class="fields"><label>{{ t('token') }}<input name="token" type="password" autocomplete="off" placeholder="••••••••"></label>
+    <label>{{ t('language') }}<select name="language">{% for code,label in languages %}<option value="{{ code }}" {{ 'selected' if locale == code else '' }}>{{ label }}</option>{% endfor %}</select></label></div>
+    <p class="field-help">{{ t('telegram_key_help') }}</p>
+    <label class="check"><input name="polling" type="checkbox" {{ 'checked' if polling else '' }}>{{ t('start_bot') }}</label>
+    <div class="form-section-title"><h3>{{ t('notifications') }}</h3></div>
+    {% for key, enabled in notifications.items() %}<label class="check"><input name="{{ key }}" type="checkbox" {{ 'checked' if enabled else '' }}>{{ t(key) }}</label>{% endfor %}
+    <button class="primary">{{ t('save') }}</button>
+  </form></section>
+  {% elif section == 'migration' %}
+  <section class="card"><form action="/migration/preview" method="post" enctype="multipart/form-data" class="stack">{{ csrf_input() }}
+    <label>config.yaml<input type="file" name="config" accept=".yaml,.yml" required></label>
+    <details><summary>{{ t('advanced') }}</summary>{% for name in ['admin.txt','allowlist.txt','chatid.txt'] %}<label>{{ name }}<input type="file" name="{{ name }}" accept=".txt"></label>{% endfor %}</details>
+    <button>{{ t('preview') }}</button>
+  </form></section>
+  {% if report %}<section class="card"><h2>{{ t('preview') }}</h2><pre>{{ report|tojson(indent=2) }}</pre><form action="/migration/apply" method="post">{{ csrf_input() }}<input type="hidden" name="digest" value="{{ report.digest }}"><button class="primary">{{ t('apply') }}</button></form></section>{% endif %}
+  {% elif section == 'diagnostics' %}
+  <section hx-get="/diagnostics/health" hx-trigger="every 15s" hx-swap="innerHTML">{% include 'health.html' %}</section>
+  <section class="card"><h2>{{ t('failed') }}</h2><pre>{{ operations|tojson(indent=2) }}</pre><pre>{{ outbox|tojson(indent=2) }}</pre></section>
+  <section class="card"><h2>{{ t('requests') }}</h2><div class="table-scroll"><table><thead><tr><th>ID</th><th>{{ t('users') }}</th><th>{{ t('requests') }}</th></tr></thead><tbody>{% for event in events %}<tr><td>{{ event.id }}</td><td>{{ event.actor }}</td><td>{{ t(event.action) }} · {{ event.request_id or '' }} {{ event.detail }}</td></tr>{% endfor %}</tbody></table></div></section>
+  {% endif %}
+  {% if section not in ['login','setup'] %}<footer><span>{{ t('private') }}</span></footer></div>{% endif %}
+</main>
+</body></html>

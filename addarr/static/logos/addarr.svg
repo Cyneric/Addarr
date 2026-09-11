@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64">
+  <title>Addarr</title>
+  <circle cx="32" cy="32" r="31" fill="#252c30"/>
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#edf0f1" stroke-width="6"
+    stroke-dasharray="34.84 6" transform="rotate(-38.4 32 32)"/>
+  <path d="m18 18 5 5m18-5-5 5m5 18-5-5m-18 5 5-5" fill="none" stroke="#f78b76" stroke-width="2.5"/>
+  <circle cx="32" cy="32" r="13" fill="#f78b76"/>
+  <path d="M29.5 24h5v5.5H40v5h-5.5V40h-5v-5.5H24v-5h5.5Z" fill="#252c30"/>
+</svg>

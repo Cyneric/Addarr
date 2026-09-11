@@ -1,0 +1,27 @@
+{#
+Filename: service_choices.html
+Author: Christian Blank
+Created Date: 2026-09-12
+Description: Profile and folder choices with saved values retained when a service is unavailable.
+#}
+{% macro choice(name, label, items, value_key, label_key, selected, loaded) %}
+<label>{{ t(label) }}
+  {% if loaded and items %}
+  <select name="{{ name }}">
+    {% if not selected %}<option value="" selected>{{ t('choose_option') }}</option>
+    {% elif selected not in items|map(attribute=value_key)|list %}<option value="{{ selected }}" selected>{{ selected }} · {{ t('choice_missing') }}</option>{% endif %}
+    {% for item in items %}<option value="{{ item[value_key] }}" {{ 'selected' if selected == item[value_key] else '' }}>{{ item[label_key] }}</option>{% endfor %}
+  </select>
+  {% else %}
+  <select disabled><option>{{ selected or t('no_service_choices' if loaded else 'choices_not_loaded') }}</option></select>
+  <input type="hidden" name="{{ name }}" value="{{ selected or '' }}">
+  {% endif %}
+</label>
+{% endmacro %}
+
+{% macro allowed_choice(name, label, items, value_key, label_key, selected) %}
+<label>{{ t(label) }}<select name="{{ name }}" multiple>
+  {% for item in items %}<option value="{{ item[value_key] }}" {{ 'selected' if item[value_key] in selected else '' }}>{{ item[label_key] }}</option>{% endfor %}
+  {% for value in selected %}{% if value not in items|map(attribute=value_key)|list %}<option value="{{ value }}" selected>{{ value }} · {{ t('choice_missing') }}</option>{% endif %}{% endfor %}
+</select></label>
+{% endmacro %}
