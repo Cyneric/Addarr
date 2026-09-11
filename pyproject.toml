@@ -1,0 +1,38 @@
+[project]
+name = "addarr"
+version = "2.0.0a1"
+description = "Private media requests through Telegram, with web administration"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "httpx>=0.28,<1",
+  "python-telegram-bot>=22.8,<23", "jinja2>=3.1.6,<4",
+  "python-multipart>=0.0.22,<1", "pyyaml>=6,<7", "argon2-cffi>=25,<26",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["addarr"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML", "playwright>=1.50,<2"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 110
+include = ["addarr/**/*.py", "tests/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["addarr"]
+check_untyped_defs = true
+disallow_untyped_defs = true

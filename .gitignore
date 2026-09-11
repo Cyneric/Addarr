@@ -16,3 +16,14 @@ venv/
 config.yaml_
 .venv/
 backup/
+
+config/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+*.db
+*.db-shm
+*.db-wal
+artifacts/
+.env
