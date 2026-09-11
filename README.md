@@ -6,7 +6,7 @@ Addarr is a Telegram bot for requesting movies, TV shows and music. It connects 
 
 It supports whole series, selected seasons, artists and individual albums. Requests need approval by default.
 
-Version 2 is a rebuild of Addarr Refresh and is still in alpha. Live Telegram testing and a 24-hour deployment test are needed before release. See [implementation status](docs/IMPLEMENTATION-STATUS.md).
+Version 2 is a rebuild of Addarr Refresh and is still in alpha. See [implementation status](docs/IMPLEMENTATION-STATUS.md).
 
 ![Addarr dashboard with request status and media services](docs/images/dashboard.png)
 
