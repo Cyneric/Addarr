@@ -220,7 +220,8 @@ async def test_search_query_is_encoded(engine, fake):
 async def test_none_preserves_existing_monitoring(engine, fake):
     await engine.create(2, ref("series"), Options(monitoring="selected", seasons=[1]))
     await engine.tick()
-    await engine.create(2, ref("series"), Options(monitoring="none"))
+    with pytest.raises(ServiceError, match="already in the library"):
+        await engine.create(2, ref("series"), Options(monitoring="none"))
     await engine.tick()
     assert fake.items["series"][0]["seasons"][0]["monitored"]
     assert len(fake.commands) == 1
@@ -262,3 +263,150 @@ async def test_changed_service_address_does_not_reuse_old_remote_ids(engine, sto
     assert not fake.items["movie"]
     assert store.one("SELECT state FROM requests WHERE id=?", (request_id,))["state"] == "failed"
     assert await engine.create(2, ref(), Options()) != request_id
+
+
+@pytest.mark.parametrize("kind,field", [("movie", "tmdbId"), ("series", "tvdbId")])
+async def test_existing_library_item_cannot_be_requested(engine, store, fake, kind, field):
+    """An item added outside Addarr must be rejected before creating a request."""
+    fake.items[kind].append({"id": 77, field: 123, "title": "Already added"})
+    with pytest.raises(ServiceError) as error:
+        await engine.create(1, ref(kind), Options())
+    assert error.value.category == "already_exists"
+    assert not store.all("SELECT * FROM requests")
+    assert not fake.commands
+
+
+async def test_library_check_uses_catalog_id_and_rechecks_at_confirmation(engine, store, fake):
+    results = await engine.search(1, "radarr", "Example")
+    assert not results[0].in_library
+    fake.items["movie"].append({"id": 999, "tmdbId": 123, "title": "Different translation"})
+    assert (await engine.search(1, "radarr", "Example"))[0].in_library
+    with pytest.raises(ServiceError, match="already in the library"):
+        await engine.create(1, results[0].ref, Options())
+    assert not store.all("SELECT * FROM requests")
+
+
+async def test_downloaded_season_cannot_be_requested_but_missing_season_can(engine, fake):
+    fake.items["series"].append({"id": 77, "tvdbId": 123, "seasons": [
+        {"seasonNumber": 1, "monitored": False}, {"seasonNumber": 2, "monitored": False},
+    ]})
+    fake.episodes[0]["hasFile"] = True
+    with pytest.raises(ServiceError, match="already in the library"):
+        await engine.create(1, ref("series"), Options(monitoring="selected", seasons=[1]))
+    assert await engine.create(1, ref("series"), Options(monitoring="selected", seasons=[2]))
+
+
+async def test_group_access_does_not_activate_pending_admin_or_bypass_revocation(engine, store):
+    group = -100123456
+    store.set_setting("allowed_group_ids", [group])
+    store.execute("UPDATE users SET status='pending',role='admin',auto_approve=1 WHERE id=1")
+    user = engine.authorize(1, chat_id=group)
+    assert user["role"] == "member" and not user["auto_approve"]
+    request_id = await engine.create(1, ref(), Options(), chat_id=group)
+    assert store.one("SELECT state FROM requests WHERE id=?", (request_id,))["state"] == "pending"
+    with pytest.raises(PermissionError):
+        engine.authorize(1)
+    store.execute("UPDATE users SET status='revoked' WHERE id=1")
+    with pytest.raises(PermissionError):
+        engine.authorize(1, chat_id=group)
+
+
+async def test_group_access_is_rechecked_after_remote_validation(engine, store, monkeypatch):
+    group = -100123456
+    store.set_setting("allowed_group_ids", [group])
+    client = engine.client("radarr")
+    original = client.already_in_library
+
+    async def revoke(ref, options):
+        result = await original(ref, options)
+        store.set_setting("allowed_group_ids", [])
+        return result
+
+    monkeypatch.setattr(client, "already_in_library", revoke)
+    monkeypatch.setattr(engine, "client", lambda kind: client)
+    with pytest.raises(PermissionError):
+        await engine.create(1, ref(), Options(), chat_id=group)
+    assert not store.all("SELECT * FROM requests")
+
+
+async def test_removed_group_stops_queued_work_even_for_active_user(engine, store, fake):
+    group = -100123456
+    store.set_setting("allowed_group_ids", [group])
+    request_id = await engine.create(2, ref(), Options(), chat_id=group)
+    store.set_setting("allowed_group_ids", [])
+    await engine.tick()
+    assert store.one("SELECT state FROM requests WHERE id=?", (request_id,))["state"] == "failed"
+    assert not fake.items["movie"]
+
+
+async def test_group_actions_cannot_target_private_or_other_group_requests(engine, store):
+    store.set_setting("allowed_group_ids", [-1001, -1002])
+    private = await engine.create(1, ref(), Options())
+    other = await engine.create(1, ref(), Options(), chat_id=-1002)
+    for request_id in (private, other):
+        with pytest.raises(PermissionError):
+            engine.action(request_id, "cancel", "1", user_id=1, chat_id=-1001)
+
+
+@pytest.mark.parametrize("action", ["cancel", "delete"])
+async def test_web_admin_removal_stops_queued_work(engine, store, fake, action):
+    request_id = await engine.create(2, ref(), Options())
+    await engine.manage_request(request_id, action, "web-owner")
+    await engine.tick()
+    assert not fake.items["movie"] and not fake.commands
+    row = store.one("SELECT * FROM requests WHERE id=?", (request_id,))
+    assert row["deleted"] == (action == "delete")
+    if action == "cancel":
+        assert row["state"] == "cancelled"
+    else:
+        assert not store.all("SELECT * FROM outbox WHERE state='pending'")
+        with pytest.raises(PermissionError):
+            engine.action(request_id, "approve", "2", user_id=2)
+
+
+@pytest.mark.parametrize("action", ["cancel", "delete"])
+async def test_web_admin_removal_preserves_remote_media_and_stops_polling(engine, store, fake, action):
+    request_id = await engine.create(2, ref(), Options())
+    await engine.tick()
+    before = len(fake.calls)
+    await engine.manage_request(request_id, action, "web-owner")
+    store.execute("UPDATE requests SET next_attempt=0")
+    await engine.tick()
+    assert len(fake.calls) == before
+    assert len(fake.items["movie"]) == 1
+    assert store.all("SELECT * FROM operations"), "Keep reconciliation history when removing a request"
+
+
+@pytest.mark.parametrize("action", ["cancel", "delete"])
+async def test_web_removal_waits_for_inflight_submission(engine, store, fake, monkeypatch, action):
+    """A remote response arriving during removal must not restore the request."""
+    request_id = await engine.create(2, ref(), Options())
+    client = engine.client("radarr")
+    original = client.submit
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def delayed(*args):
+        started.set()
+        await release.wait()
+        return await original(*args)
+
+    monkeypatch.setattr(client, "submit", delayed)
+    monkeypatch.setattr(engine, "client", lambda kind: client)
+    tick = asyncio.create_task(engine.tick())
+    await asyncio.wait_for(started.wait(), 2)
+    removal = asyncio.create_task(engine.manage_request(request_id, action, "web-owner"))
+    await asyncio.sleep(0)
+    assert not removal.done()
+    release.set()
+    await asyncio.wait_for(asyncio.gather(tick, removal), 3)
+    row = store.one("SELECT * FROM requests WHERE id=?", (request_id,))
+    assert row["deleted"] if action == "delete" else row["state"] == "cancelled"
+    assert len(fake.items["movie"]) == 1
+
+
+async def test_deleted_request_ids_are_not_reused(engine, store):
+    first = await engine.create(2, ref(), Options())
+    await engine.manage_request(first, "delete", "web-owner")
+    second = await engine.create(2, ref(), Options())
+    assert second > first
+    assert store.one("SELECT action FROM events WHERE request_id=? ORDER BY id DESC", (first,))["action"] == "request_deleted"

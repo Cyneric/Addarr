@@ -89,6 +89,7 @@ class SearchResult(BaseModel):
     overview: str = ""
     image: str = ""
     seasons: list[int] = Field(default_factory=list)
+    in_library: bool = False
 
 
 class ServiceError(Exception):

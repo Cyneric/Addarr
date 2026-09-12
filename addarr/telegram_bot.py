@@ -2,11 +2,12 @@
 Filename: telegram_bot.py
 Author: Christian Blank
 Created Date: 2026-09-11
-Description: Private chat commands, media selection and queued Telegram notifications.
+Description: Private and allowed-group commands, media selection and queued Telegram notifications.
 """
 
 import asyncio
 import hashlib
+import html
 import json
 import logging
 import secrets
@@ -15,7 +16,7 @@ from typing import Any
 
 from telegram import InlineKeyboardButton as Button
 from telegram import InlineKeyboardMarkup as Keyboard
-from telegram import Update
+from telegram import ForceReply, Update
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -37,12 +38,12 @@ logger = logging.getLogger("addarr.telegram")
 class TelegramUI:
     """Telegram conversations and notification delivery backed by the shared engine.
 
-    Selection screens are temporary per-user state with expiring nonces.
+    Selection screens are temporary user/chat/topic state with expiring nonces.
     Submitted requests and notifications live in SQLite and survive restarts.
     """
     def __init__(self, engine: Engine):
         self.engine, self.store = engine, engine.store
-        self.screens: dict[int, dict[str, Any]] = {}
+        self.screens: dict[tuple[int, int, int | None], dict[str, Any]] = {}
         self.application: Any = None
         self.online = False
         self.last_error = ""
@@ -56,11 +57,31 @@ class TelegramUI:
         """Translate and format a message using the recipient language."""
         return translate(self.locale(user_id), key, **values)
 
+    def group_id(self, update: Update) -> int | None:
+        """Return a group origin, leaving private conversations without a group grant."""
+        chat = update.effective_chat
+        return chat.id if chat and chat.type in ("group", "supergroup") else None
+
+    def screen_key(self, update: Update, uid: int) -> tuple[int, int, int | None]:
+        """Keep each user's selections separate across chats and forum topics."""
+        assert update.effective_chat and update.effective_message
+        return update.effective_chat.id, uid, update.effective_message.message_thread_id
+
+    def keyboard(self, update: Update, rows: list[list[Button]]) -> Keyboard:
+        """Bind every group button, including navigation, to the initiating user."""
+        if self.group_id(update) is None:
+            return Keyboard(rows)
+        assert update.effective_user
+        return Keyboard([
+            [Button(button.text, callback_data=f"g:{update.effective_user.id}:{button.callback_data}")
+             for button in row] for row in rows
+        ])
+
     async def render(self, update: Update, text: str, rows: list[list[Button]] | None = None) -> None:
         """Edit the current callback message when possible, otherwise send a reply with its keyboard."""
         if not update.effective_message:
             return
-        keyboard = Keyboard(rows or [])
+        keyboard = self.keyboard(update, rows or [])
         if update.callback_query:
             try:
                 if update.effective_message.photo:
@@ -73,32 +94,64 @@ class TelegramUI:
         await update.effective_message.reply_text(text[:4000], reply_markup=keyboard)
 
     async def receive(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Accept private chat updates, acknowledge callbacks and render safe errors for the user."""
-        if not update.effective_user or not update.effective_chat or update.effective_chat.type != "private":
+        """Check chat access and callback ownership before touching conversation state.
+
+        Group searches accept replies only to the user's current search prompt,
+        so normal conversation cannot become a search when privacy is disabled.
+        Anonymous senders and channel posts have no usable requester identity.
+        """
+        if not update.effective_user or not update.effective_chat or not update.effective_message:
+            return
+        if update.effective_user.is_bot or update.effective_message.sender_chat:
+            return
+        group = self.group_id(update)
+        if group and (update.effective_message.text or "").split("@", 1)[0] == "/chatid":
+            await update.effective_message.reply_text(str(group))
+            return
+        if update.effective_chat.type != "private" and not self.store.group_allowed(group):
+            if update.callback_query:
+                await update.callback_query.answer()
             return
         uid = update.effective_user.id
+        data = update.callback_query.data or "" if update.callback_query else ""
+        if group and update.callback_query:
+            prefix = f"g:{uid}:"
+            if not data.startswith(prefix):
+                await update.callback_query.answer(self.t(uid, "own_buttons"))
+                return
+            data = data[len(prefix):]
+        if group and not update.callback_query and not (update.effective_message.text or "").startswith("/"):
+            screen = self.screens.get(self.screen_key(update, uid))
+            reply = update.effective_message.reply_to_message
+            if (not screen or screen["expires"] <= time.time() or not reply
+                    or reply.message_id != screen.get("prompt_id")):
+                return
         if update.callback_query:
             await update.callback_query.answer()
         try:
-            await self.dispatch(update, uid)
+            await self.dispatch(update, uid, data)
         except PermissionError:
             await self.render(update, self.t(uid, "access_pending"))
-        except (ServiceError, ValueError, KeyError, IndexError):
+        except (ServiceError, ValueError, KeyError, IndexError) as exc:
             await self.render(
-                update, self.t(uid, "error"), [[Button(self.t(uid, "back"), callback_data="home")]]
+                update, self.t(uid, "already_in_library" if isinstance(exc, ServiceError)
+                               and exc.category == "already_exists" else "error"),
+                [[Button(self.t(uid, "back"), callback_data="home")]],
             )
         except TelegramError:
             logger.warning("telegram_reply_failed user_id=%s", uid)
 
-    async def dispatch(self, update: Update, uid: int) -> None:
-        """Route a private update after registering its sender and handling an invite.
+    async def dispatch(self, update: Update, uid: int, data: str | None = None) -> None:
+        """Route an accepted update after registering its sender and handling a private invite.
 
         Invites activate a member without automatic request approval. All later
         commands require active access, and expired selection screens are removed.
-        The receive() handler enforces private chat access before calling this.
+        The receive() handler checks the chat allowlist and callback owner first.
         """
+        assert update.effective_message and update.effective_user
+        screen: dict[str, Any] | None
         text = update.effective_message.text or "" if update.effective_message else ""
-        data = update.callback_query.data or "" if update.callback_query else ""
+        data = data if data is not None else (update.callback_query.data or "" if update.callback_query else "")
         command = text.split()[0].split("@")[0].lower() if text.startswith("/") else ""
         self.store.execute(
             "INSERT OR IGNORE INTO users(id,name,locale) VALUES(?,?,?)",
@@ -108,8 +161,9 @@ class TelegramUI:
                 self.store.setting("language", "en-us"),
             ),
         )
-        self.store.execute("UPDATE users SET chat_id=? WHERE id=?", (uid, uid))
-        if command == "/start" and len(text.split()) == 2:
+        if self.group_id(update) is None:
+            self.store.execute("UPDATE users SET chat_id=? WHERE id=?", (uid, uid))
+        if command == "/start" and len(text.split()) == 2 and self.group_id(update) is None:
             digest = hashlib.sha256(text.split()[1].encode()).hexdigest()
             with self.store.transaction():
                 invite = self.store.one(
@@ -122,10 +176,10 @@ class TelegramUI:
                         "UPDATE users SET status='active',role='member',auto_approve=0 WHERE id=?", (uid,)
                     )
                     self.store.audit(str(uid), "invite_redeemed")
-        self.engine.authorize(uid)
+        self.engine.authorize(uid, chat_id=self.group_id(update))
         self.screens = {key: val for key, val in self.screens.items() if val["expires"] > time.time()}
         if command in ("/start", "/auth") or data == "home":
-            self.screens.pop(uid, None)
+            self.screens.pop(self.screen_key(update, uid), None)
             rows = []
             for kind, service in (
                 ("movie", "radarr"),
@@ -160,7 +214,7 @@ class TelegramUI:
                 update, self.t(uid, "language"), [[Button(self.t(uid, "back"), callback_data="home")]]
             )
         elif command == "/cancel" or data == "cancel":
-            self.screens.pop(uid, None)
+            self.screens.pop(self.screen_key(update, uid), None)
             await self.render(
                 update, self.t(uid, "cancelled"), [[Button(self.t(uid, "back"), callback_data="home")]]
             )
@@ -176,7 +230,10 @@ class TelegramUI:
             await self.requests(update, uid)
         elif data.startswith("r:"):
             _, action, request_id = data.split(":")
-            self.engine.action(int(request_id), action, str(uid), user_id=uid)
+            self.engine.action(
+                int(request_id), action, str(uid), user_id=uid,
+                chat_id=self.group_id(update), thread_id=update.effective_message.message_thread_id,
+            )
             await self.requests(update, uid)
         elif command in ("/movie", "/series", "/music") or data.startswith("new:"):
             kind = (
@@ -184,7 +241,7 @@ class TelegramUI:
                 if data
                 else {"/movie": "movie", "/series": "series", "/music": "artist"}[command]
             )
-            self.screens[uid] = {
+            self.screens[self.screen_key(update, uid)] = {
                 "kind": kind,
                 "nonce": secrets.token_hex(4),
                 "expires": time.time() + 900,
@@ -192,19 +249,34 @@ class TelegramUI:
                 "selected": None,
                 "options": Options(),
             }
-            await self.render(
-                update, self.t(uid, "search"), [[Button(self.t(uid, "cancel"), callback_data="cancel")]]
-            )
+            screen = self.screens[self.screen_key(update, uid)]
+            term = text.split(maxsplit=1)[1] if command and len(text.split(maxsplit=1)) == 2 else ""
+            if term:
+                service = {"movie": "radarr", "series": "sonarr", "artist": "lidarr", "album": "lidarr"}[kind]
+                screen["results"] = await self.engine.search(uid, service, term, kind, chat_id=self.group_id(update))
+                await self.results(update, uid, screen)
+            elif self.group_id(update):
+                assert update.effective_message
+                prompt = await update.effective_message.reply_text(
+                    f'<a href="tg://user?id={uid}">{html.escape(update.effective_user.first_name)}</a>\n'
+                    + html.escape(self.t(uid, "group_search")),
+                    parse_mode="HTML", reply_markup=ForceReply(selective=True), do_quote=True,
+                )
+                screen["prompt_id"] = prompt.message_id
+            else:
+                await self.render(
+                    update, self.t(uid, "search"), [[Button(self.t(uid, "cancel"), callback_data="cancel")]]
+                )
         elif data.startswith("s:"):
             await self.selection(update, uid, data)
         elif not command and not data:
-            screen = self.screens.get(uid)
+            screen = self.screens.get(self.screen_key(update, uid))
             if not screen:
                 await self.render(update, self.t(uid, "expired"))
                 return
             kind = screen["kind"]
             service = {"movie": "radarr", "series": "sonarr", "artist": "lidarr", "album": "lidarr"}[kind]
-            screen["results"] = await self.engine.search(uid, service, text, kind)
+            screen["results"] = await self.engine.search(uid, service, text, kind, chat_id=self.group_id(update))
             await self.results(update, uid, screen)
         else:
             await self.render(update, self.t(uid, "expired"))
@@ -216,7 +288,8 @@ class TelegramUI:
     async def results(self, update: Update, uid: int, screen: dict[str, Any]) -> None:
         """Render search results as nonce-bound selection buttons with a cancel action."""
         rows = [
-            [Button(result.ref.title[:70], callback_data=f"s:{screen['nonce']}:pick:{i}")]
+            [Button(result.ref.title[:55] + (" · " + self.t(uid, "in_library") if result.in_library else ""),
+                    callback_data=f"s:{screen['nonce']}:pick:{i}")]
             for i, result in enumerate(screen["results"])
         ]
         rows.append([Button(self.t(uid, "cancel"), callback_data="cancel")])
@@ -225,14 +298,15 @@ class TelegramUI:
         )
 
     async def selection(self, update: Update, uid: int, data: str) -> None:
-        """Handle a media selection callback for the user's current screen.
+        """Handle a media selection callback for the current user, chat and topic.
 
         Reject an old nonce, then update selection or options, render a preview,
         or create the confirmed request through the engine. dispatch() removes
         expired screens before reaching this handler.
         """
+        assert update.effective_message
         parts = data.split(":")
-        screen = self.screens.get(uid)
+        screen = self.screens.get(self.screen_key(update, uid))
         if not screen or parts[1] != screen["nonce"]:
             await self.render(update, self.t(uid, "expired"))
             return
@@ -248,8 +322,11 @@ class TelegramUI:
             raise ValueError("No selection")
         opts: Options = screen["options"]
         if action == "confirm":
-            request_id = await self.engine.create(uid, selected.ref, opts)
-            self.screens.pop(uid, None)
+            request_id = await self.engine.create(
+                uid, selected.ref, opts, chat_id=self.group_id(update),
+                thread_id=update.effective_message.message_thread_id if self.group_id(update) else None,
+            )
+            self.screens.pop(self.screen_key(update, uid), None)
             row = self.store.one("SELECT state FROM requests WHERE id=?", (request_id,))
             assert row is not None
             await self.render(
@@ -257,6 +334,13 @@ class TelegramUI:
                 f"#{request_id} · {selected.ref.title}\n{self.t(uid, row['state'])}",
                 [[Button(self.t(uid, "requests"), callback_data="requests")]],
             )
+            return
+        client = self.engine.client(selected.ref.service)
+        in_library = await client.already_in_library(selected.ref, opts)
+        if in_library and selected.ref.kind in ("movie", "album"):
+            await self.render(update, selected.ref.title + "\n" + self.t(uid, "already_in_library"), [
+                [self.button(uid, screen, "back", "results")],
+            ])
             return
         if action in ("advanced", "profile", "folder", "mode", "season"):
             client = self.engine.client(selected.ref.service)
@@ -321,24 +405,30 @@ class TelegramUI:
                     ]
                     for s in selected.seasons
                 ]
-            rows.append(
-                [self.button(uid, screen, "confirm", "confirm"), self.button(uid, screen, "back", "preview")]
-            )
+            actions = [self.button(uid, screen, "back", "preview")]
+            if not await client.already_in_library(selected.ref, opts):
+                actions.insert(0, self.button(uid, screen, "confirm", "confirm"))
+            rows.append(actions)
             await self.render(update, selected.ref.title + "\n" + self.t(uid, opts.monitoring), rows)
             return
         rows = [
-            [self.button(uid, screen, "confirm", "confirm")],
             [self.button(uid, screen, "advanced", "advanced")],
             [
                 self.button(uid, screen, "back", "results"),
                 Button(self.t(uid, "cancel"), callback_data="cancel"),
             ],
         ]
+        if not in_library:
+            rows.insert(0, [self.button(uid, screen, "confirm", "confirm")])
         preview = selected.ref.title + "\n\n" + selected.overview[:700]
+        if in_library:
+            preview += "\n\n" + self.t(uid, "already_in_library")
+            if selected.ref.kind == "series":
+                preview += "\n" + self.t(uid, "missing_seasons")
         if action == "pick" and selected.image.startswith("https://") and update.effective_message:
             try:
                 await update.effective_message.reply_photo(
-                    selected.image, caption=preview[:1000], reply_markup=Keyboard(rows)
+                    selected.image, caption=preview[:1000], reply_markup=self.keyboard(update, rows)
                 )
                 return
             except TelegramError:
@@ -347,17 +437,29 @@ class TelegramUI:
 
     async def requests(self, update: Update, uid: int) -> None:
         """Show the latest ten visible requests and the actions allowed for their current states."""
-        user = self.engine.authorize(uid)
-        rows = self.store.all(
-            "SELECT * FROM requests "
-            + ("" if user["role"] == "admin" else "WHERE user_id=? ")
-            + "ORDER BY id DESC LIMIT 10",
-            () if user["role"] == "admin" else (uid,),
-        )
+        user = self.engine.authorize(uid, chat_id=self.group_id(update))
+        group = self.group_id(update)
+        if group:
+            assert update.effective_message
+            rows = self.store.all(
+                "SELECT * FROM requests WHERE deleted=0 AND user_id=? AND chat_id=? AND thread_id IS ? ORDER BY id DESC LIMIT 10",
+                (uid, group, update.effective_message.message_thread_id),
+            )
+        else:
+            rows = self.store.all(
+                "SELECT * FROM requests WHERE deleted=0 "
+                + ("" if user["role"] == "admin" else "AND user_id=? ")
+                + "ORDER BY id DESC LIMIT 10",
+                () if user["role"] == "admin" else (uid,),
+            )
         text, buttons = [], []
         for row in rows:
+            from .downloads import download_text
+
+            downloads = download_text(self.store, row, user["locale"])
             text.append(
                 f"#{row['id']} · {json.loads(row['media'])['title']}\n{self.t(uid, row['state'])}\n{row['progress']}"
+                + (f"\n{downloads}" if downloads else "")
             )
             actions = []
             if row["state"] == "pending" and user["role"] == "admin":
@@ -387,15 +489,28 @@ class TelegramUI:
             "SELECT * FROM outbox WHERE state='pending' AND next_attempt<=? ORDER BY id LIMIT 10",
             (time.time(),),
         ):
-            user = self.store.one("SELECT status FROM users WHERE chat_id=?", (row["chat_id"],))
-            if not user or user["status"] != "active":
+            # Another send may have yielded while an admin deleted this request.
+            if not self.store.one("SELECT id FROM outbox WHERE id=? AND state='pending'", (row["id"],)):
+                continue
+            if row["chat_id"] < 0:
+                user = self.store.one(
+                    "SELECT users.status FROM users JOIN requests ON requests.user_id=users.id "
+                    "JOIN events ON events.request_id=requests.id WHERE events.id=? AND requests.chat_id=?",
+                    (row["event_id"], row["chat_id"]),
+                )
+                allowed = self.store.group_allowed(row["chat_id"]) and bool(user and user["status"] != "revoked")
+            else:
+                user = self.store.one("SELECT status FROM users WHERE chat_id=?", (row["chat_id"],))
+                allowed = bool(user and user["status"] == "active")
+            if not allowed:
                 self.store.execute("UPDATE outbox SET state='discarded' WHERE id=?", (row["id"],))
                 continue
             payload = json.loads(row["payload"])
             payload["state"] = translate(row["locale"], payload["state"])
             try:
                 await self.application.bot.send_message(
-                    row["chat_id"], translate(row["locale"], row["key"], **payload)[:4000]
+                    row["chat_id"], translate(row["locale"], row["key"], **payload)[:4000],
+                    message_thread_id=row["thread_id"],
                 )
                 self.store.execute("UPDATE outbox SET state='sent' WHERE id=?", (row["id"],))
             except Forbidden:
@@ -428,7 +543,7 @@ class TelegramUI:
         self.application = application
         application.add_handler(
             CommandHandler(
-                ["start", "auth", "movie", "series", "music", "status", "help", "cancel", "requests"],
+                ["start", "auth", "movie", "series", "music", "status", "help", "cancel", "requests", "chatid"],
                 self.receive,
             )
         )

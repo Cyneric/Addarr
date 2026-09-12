@@ -18,8 +18,15 @@ Description: Shared page layout and administration screens.
 {% from 'icons.html' import icon, brand, app_logo %}
 {% from 'service_choices.html' import choice, allowed_choice with context %}
 {% macro csrf_input() %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
-{% macro action(url, label, style='') %}<form method="post" action="{{ url }}" class="inline">{{ csrf_input() }}<button class="{{ style }}">{{ t(label) }}</button></form>{% endmacro %}
+{% macro action(url, label, style='', confirm='') %}<form method="post" action="{{ url }}" class="inline"{% if confirm %} data-confirm="{{ t(confirm) }}"{% endif %}>{{ csrf_input() }}<button class="{{ style }}">{{ t(label) }}</button></form>{% endmacro %}
 {% macro language_picker() %}<details class="language"><summary>{{ icon('globe') }}<span>{{ locale[:2]|upper }}</span></summary><div>{% for code,label in languages %}<a href="?lang={{ code }}" lang="{{ code[:2] }}" {{ 'aria-current=page' if code == locale else '' }}>{{ label }}</a>{% endfor %}</div></details>{% endmacro %}
+{% macro update_control(standalone=false) %}
+<div class="{{ 'card update-compact' if standalone else 'update-banner' }}" data-update-view data-state="{{ update_ui.state }}" data-standalone="{{ 'true' if standalone else 'false' }}" data-busy="{{ t('update_simple_busy') }}" data-failed="{{ t('update_simple_failed') }}"{% if not standalone and not update_ui.visible %} hidden{% endif %}>
+  <span class="update-message" role="status" aria-live="polite">{{ t(update_ui.message_key) }}</span>
+  <form action="/updates/install" method="post" data-update-install{% if not update_ui.can_install %} hidden{% endif %}>{{ csrf_input() }}<input type="hidden" name="revision" value="{{ update_ui.revision }}"><button class="primary"{% if not update_ui.can_install %} disabled{% endif %}>{{ t('update_now') }}</button></form>
+  <a class="text-link" href="/diagnostics#updates" data-update-details{% if not update_ui.details %} hidden{% endif %}>{{ t('diagnostics') }}</a>
+</div>
+{% endmacro %}
 {% set public = section in ['login','setup','error'] %}
 <a class="skip-link" href="#content">{{ t('skip_content') }}</a>
 {% if not public %}
@@ -28,7 +35,7 @@ Description: Shared page layout and administration screens.
   <div class="workspace-label"><span class="dot online"></span>{{ t('private') }}</div>
   <nav aria-label="{{ t('navigation') }}">
   <p class="nav-label">{{ t('workspace') }}</p>
-  {% for key, href in [('dashboard','/'),('requests','/requests'),('users','/users'),('services','/services'),('settings','/settings'),('migration','/migration'),('diagnostics','/diagnostics')] %}
+  {% for key, href in [('dashboard','/'),('requests','/requests'),('users','/users'),('services','/services'),('downloads','/downloads'),('settings','/settings'),('migration','/migration'),('diagnostics','/diagnostics')] %}
     {% if key == 'services' %}<p class="nav-label nav-divider">{{ t('manage') }}</p>{% endif %}
     <a href="{{ href }}" class="{{ 'selected' if section == key else '' }}" {{ 'aria-current=page' if section == key else '' }}>{{ icon(key) }}<span>{{ t(key) }}</span>{% if section == 'dashboard' and key == 'requests' and counts.get('pending',0) %}<span class="nav-count">{{ counts.pending }}</span>{% endif %}</a>
   {% endfor %}
@@ -40,6 +47,7 @@ Description: Shared page layout and administration screens.
 <main id="content" class="{{ 'public' if public else 'admin-main' }} {{ 'auth-page' if section in ['login','setup'] else '' }}">
   {% if section not in ['login','setup'] %}
   <div class="topbar"><div><button class="menu-toggle icon-button" aria-label="{{ t('navigation') }}" aria-expanded="false" aria-controls="navigation">{{ icon('menu') }}</button><span>Addarr</span><span class="breadcrumb-divider">/</span><span>{{ t(section) }}</span></div>{{ language_picker() }}</div>
+  {% if not public and section != 'updates' %}{{ update_control() }}{% endif %}
   <div class="page-content">
   <header class="page-heading"><div><p class="eyebrow">{{ t('workspace') }}</p><h1>{{ t(section) }}</h1>{% if section~'_intro' in ['dashboard_intro','requests_intro','users_intro','services_intro','settings_intro','migration_intro','diagnostics_intro'] %}<p class="page-description">{{ t(section~'_intro') }}</p>{% endif %}</div><span class="section-emblem">{{ icon(section) }}</span></header>
   {% endif %}
@@ -87,7 +95,8 @@ Description: Shared page layout and administration screens.
     {% for row in requests %}
     <article class="card request"><div class="request-top"><span class="eyebrow">#{{ row.id }} / {{ row.media.service|upper }}</span><span class="pill {{ 'good' if row.state == 'available' else '' }}">{{ t(row.state) }}</span></div><h2>{{ row.media.title }}</h2><p>{{ row.name }} · {{ row.progress }}</p>
       {% if row.error %}<details class="error-detail"><summary>{{ t('diagnostics') }}</summary><p>{{ row.error }}</p></details>{% endif %}
-      <div class="actions">{% if row.state == 'pending' %}{{ action('/requests/'~row.id~'/approve','approve','primary') }}{{ action('/requests/'~row.id~'/reject','reject') }}{% endif %}{% if row.state == 'failed' %}{{ action('/requests/'~row.id~'/retry','retry') }}{% endif %}{% if row.state in ['pending','queued'] %}{{ action('/requests/'~row.id~'/cancel','cancel','quiet') }}{% endif %}</div>
+      {% for download in row.downloads %}<div class="download-progress"><div><strong>{{ t(download.phase) }}</strong>{% if download.percent is not none %}<span>{{ '%.0f'|format(download.percent) }}%</span>{% endif %}</div>{% if download.percent is not none %}<progress max="100" value="{{ download.percent }}" aria-label="{{ t('downloads') }}"></progress>{% endif %}<small>{% if download.remaining is not none %}{{ '%.0f'|format(download.remaining) }} MB {{ t('remaining') }}{% endif %}{% if download.eta %} · {{ download.eta }}{% endif %}</small></div>{% endfor %}
+      <div class="actions">{% if row.state == 'pending' %}{{ action('/requests/'~row.id~'/approve','approve','primary') }}{{ action('/requests/'~row.id~'/reject','reject') }}{% endif %}{% if row.state == 'failed' %}{{ action('/requests/'~row.id~'/retry','retry') }}{% endif %}{% if row.state in ['pending','queued','submitting','submitted','failed'] %}{{ action('/requests/'~row.id~'/cancel','cancel','quiet','cancel_request_confirm') }}{% endif %}{{ action('/requests/'~row.id~'/delete','delete_request','danger','delete_request_confirm') }}</div>
     </article>
     {% else %}<div class="empty card"><span class="empty-icon">{{ icon('requests') }}</span><h2>{{ t('no_requests') }}</h2><p>{{ t('requests_empty_hint') }}</p><a class="button primary" href="/settings">{{ t('connect_telegram') }}{{ icon('arrow') }}</a></div>{% endfor %}
   </section>
@@ -104,6 +113,7 @@ Description: Shared page layout and administration screens.
     </form></article>{% else %}<div class="empty card">{{ t('no_users') }}</div>{% endfor %}
   </section>
   {% elif section == 'services' %}
+  <p><a class="text-link" href="/downloads">SABnzbd · {{ t('downloads') }} {{ icon('arrow') }}</a></p>
   <nav class="service-picker" aria-label="{{ t('services') }}">{% for kind,category in [('radarr','movie'),('sonarr','series'),('lidarr','music')] %}<a href="#{{ kind }}" data-service="{{ kind }}">{{ app_logo(kind) }}<strong>{{ kind|capitalize }}</strong><span>{{ t(category) }}</span></a>{% endfor %}</nav>
   <section class="stack service-panels" data-active-service="{{ active_service }}">
   {% for kind, config in configs.items() %}
@@ -135,7 +145,26 @@ Description: Shared page layout and administration screens.
     </form></article>
   {% endfor %}
   </section>
+  {% elif section == 'downloads' %}
+  <section class="card"><div class="service-heading">{{ app_logo('sabnzbd') }}<h2>SABnzbd</h2></div><p>{{ t('sab_help') }}</p>
+    <form action="/downloads" method="post" class="stack">{{ csrf_input() }}
+      <label class="check"><input type="checkbox" name="enabled" {{ 'checked' if sab.get('enabled') else '' }}>{{ t('enabled') }}</label>
+      <div class="fields"><label>URL<input type="url" name="url" required value="{{ sab.get('url','') }}" placeholder="http://192.168.1.10:8080/sabnzbd"></label><label>API key<input type="password" name="api_key" autocomplete="off" placeholder="{{ '••••••••' if sab.get('api_key') else '' }}"></label></div>
+      <p class="field-help">{{ t('sab_key_help') }}</p>
+      <div class="form-section-title"><h3>{{ t('download_clients') }}</h3><p>{{ t('client_mapping_help') }}</p></div>
+      <div class="fields">{% for kind, clients in choices.items() %}<label>{{ kind|capitalize }}<select name="{{ kind }}"><option value="">{{ t('automatic') if clients|length == 1 else t('select_client') }}</option>{% for client in clients %}<option value="{{ client.id }}" {{ 'selected' if sab.get('mappings',{}).get(kind) == client.id else '' }}>{{ client.name }}</option>{% endfor %}</select>{% if not clients %}<small>{{ t('no_download_client') }}</small>{% endif %}</label>{% endfor %}</div>
+      <div class="actions"><button name="action" value="test">{{ t('test') }}</button><button class="primary" name="action" value="save">{{ t('save') }}</button>{% if tested %}<span class="connection-success">{{ t('connection_verified') }}</span>{% endif %}</div>
+    </form>
+  </section>
+  {% elif section == 'updates' %}
+  {{ update_control(true) }}
   {% elif section == 'settings' %}
+  <section class="card"><h2>{{ t('group_chats') }}</h2><form action="/settings/groups" method="post" class="stack">{{ csrf_input() }}
+    <label>{{ t('allowed_group_ids') }}<textarea name="allowed_group_ids" rows="3" placeholder="-1001234567890" aria-describedby="group-help">{{ allowed_group_ids|join('\n') }}</textarea></label>
+    <p class="field-help" id="group-help">{{ t('group_ids_help') }}</p>
+    <p class="field-help">{{ t('group_usage_help') }}</p>
+    <button class="primary">{{ t('save') }}</button>
+  </form></section>
   <section class="card"><h2>{{ t('requests') }}</h2><form action="/settings/requests" method="post" class="stack">{{ csrf_input() }}
     <label class="check"><input name="auto_approve_all" type="checkbox" {{ 'checked' if auto_approve_all else '' }} aria-describedby="auto-approve-help">{{ t('auto_approve_all') }}</label>
     <p class="field-help" id="auto-approve-help">{{ t('auto_approve_all_help') }}</p>
@@ -158,6 +187,14 @@ Description: Shared page layout and administration screens.
   </form></section>
   {% if report %}<section class="card"><h2>{{ t('preview') }}</h2><pre>{{ report|tojson(indent=2) }}</pre><form action="/migration/apply" method="post">{{ csrf_input() }}<input type="hidden" name="digest" value="{{ report.digest }}"><button class="primary">{{ t('apply') }}</button></form></section>{% endif %}
   {% elif section == 'diagnostics' %}
+  <section class="card" id="updates"><div class="section-title"><h2>{{ t('updates') }}</h2>{{ action('/updates/check','check_now') }}</div>
+    <p>{{ t(update.status) }}</p><dl class="update-versions"><dt>{{ t('installed') }}</dt><dd><code>{{ update.current }}</code></dd><dt>{{ t('latest_commit') }}</dt><dd><code>{{ update.latest or t('not_checked') }}</code></dd></dl>
+    <p>{{ t('updater') }}: <span data-update-detail>{{ t('update_'~job.phase) }}</span></p>{% if job.get('error') %}<p>{{ job.error }}</p>{% endif %}
+    {% if update.commits %}<ul class="commit-list">{% for commit in update.commits %}<li><a href="https://github.com/Cyneric/Addarr/commit/{{ commit.sha }}" target="_blank" rel="noopener"><code>{{ commit.sha[:7] }}</code> {{ commit.message }}</a></li>{% endfor %}</ul>{% endif %}
+    {% if not job.enabled %}<p>{{ t('manual_update_help') }}</p><a class="text-link" href="https://github.com/Cyneric/Addarr/blob/main/docs/UPDATES.md">{{ t('setup') }} {{ icon('arrow') }}</a>{% endif %}
+    <p><a class="text-link" href="/updates">{{ t('updates') }} {{ icon('arrow') }}</a></p>
+  </section>
+
   <section hx-get="/diagnostics/health" hx-trigger="every 15s" hx-swap="innerHTML">{% include 'health.html' %}</section>
   <section class="card"><h2>{{ t('failed') }}</h2><pre>{{ operations|tojson(indent=2) }}</pre><pre>{{ outbox|tojson(indent=2) }}</pre></section>
   <section class="card"><h2>{{ t('requests') }}</h2><div class="table-scroll"><table><thead><tr><th>ID</th><th>{{ t('users') }}</th><th>{{ t('requests') }}</th></tr></thead><tbody>{% for event in events %}<tr><td>{{ event.id }}</td><td>{{ event.actor }}</td><td>{{ t(event.action) }} · {{ event.request_id or '' }} {{ event.detail }}</td></tr>{% endfor %}</tbody></table></div></section>

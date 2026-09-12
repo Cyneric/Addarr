@@ -65,11 +65,51 @@ class Store:
         self.db.execute("PRAGMA foreign_keys=ON")
         self.db.execute("PRAGMA synchronous=FULL")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version > 1:
+        if version > 4:
             self.db.close()
             raise RuntimeError("Database is newer than this Addarr version; restore a matching backup")
         if version == 0:
             self.db.executescript("BEGIN IMMEDIATE;" + SCHEMA + "PRAGMA user_version=1; COMMIT;")
+        if version < 2:
+            if version == 1:
+                backups = directory / "backups"
+                backups.mkdir(exist_ok=True)
+                self.backup(backups / f"before-schema-v2-{time.time_ns()}.db")
+            # Persist the request origin without changing existing private-chat rows.
+            self.db.executescript(
+                "BEGIN IMMEDIATE;"
+                "ALTER TABLE requests ADD COLUMN chat_id INTEGER;"
+                "ALTER TABLE requests ADD COLUMN thread_id INTEGER;"
+                "ALTER TABLE outbox ADD COLUMN thread_id INTEGER;"
+                "PRAGMA user_version=2; COMMIT;"
+            )
+        if version < 3:
+            if version == 2:
+                backups = directory / "backups"
+                backups.mkdir(exist_ok=True)
+                self.backup(backups / f"before-schema-v3-{time.time_ns()}.db")
+            self.db.executescript(
+                "BEGIN IMMEDIATE;"
+                "ALTER TABLE requests ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;"
+                "PRAGMA user_version=3; COMMIT;"
+            )
+        if version < 4:
+            if version == 3:
+                backups = directory / "backups"
+                backups.mkdir(exist_ok=True)
+                self.backup(backups / f"before-schema-v4-{time.time_ns()}.db")
+            self.db.executescript(
+                "BEGIN IMMEDIATE;"
+                "CREATE TABLE downloads (id INTEGER PRIMARY KEY, instance TEXT NOT NULL, "
+                "nzo_id TEXT NOT NULL, phase TEXT NOT NULL DEFAULT 'unknown', "
+                "percent REAL, remaining REAL, eta TEXT NOT NULL DEFAULT '', "
+                "seen REAL NOT NULL DEFAULT 0, UNIQUE(instance,nzo_id));"
+                "CREATE TABLE request_downloads (request_id INTEGER NOT NULL REFERENCES requests(id), "
+                "download_id INTEGER NOT NULL REFERENCES downloads(id), "
+                "PRIMARY KEY(request_id,download_id));"
+                "ALTER TABLE requests ADD COLUMN download_phase TEXT NOT NULL DEFAULT '';"
+                "PRAGMA user_version=4; COMMIT;"
+            )
         if os.name != "nt":
             self.path.chmod(0o600)
 
@@ -113,6 +153,10 @@ class Store:
     def user(self, user_id: int) -> dict[str, Any] | None:
         """Return a Telegram user by numeric ID, or None if they have never contacted the bot."""
         return self.one("SELECT * FROM users WHERE id=?", (user_id,))
+
+    def group_allowed(self, chat_id: int | None) -> bool:
+        """Check the current explicit group allowlist; private IDs never grant group access."""
+        return chat_id is not None and chat_id < 0 and chat_id in self.setting("allowed_group_ids", [])
 
     def audit(self, actor: str, action: str, request_id: int | None = None, detail: str = "") -> int:
         """Append an audit event and return its ID; detail must not contain credentials."""

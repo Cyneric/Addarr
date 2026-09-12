@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import secrets
 import time
 from contextlib import asynccontextmanager, closing
@@ -27,7 +28,9 @@ from starlette.datastructures import FormData, UploadFile
 from starlette.responses import Response
 
 from . import __version__
-from .adapters import ArrClient
+from .adapters import ArrClient, configured_clients
+from .downloads import DownloadTracker, SabnzbdClient, SabnzbdConfig, download_clients, request_downloads
+from .updates import UpdateClient, PROTOCOL, installed_revision, maintenance, update_view
 from .domain import Options, ServiceConfig, ServiceError
 from .engine import Engine
 from .i18n import LANGUAGES, LOCALES, translate
@@ -75,11 +78,24 @@ def create_app(
                 engine = Engine(store, http)
                 telegram = TelegramUI(engine)
                 app.state.engine, app.state.telegram = engine, telegram
-                tasks = (
-                    [asyncio.create_task(engine.run()), asyncio.create_task(telegram.run())]
-                    if background
-                    else []
-                )
+                updates = UpdateClient(http)
+                app.state.updates = updates
+                if (store.one("PRAGMA quick_check") or {}).get("quick_check") != "ok":
+                    raise RuntimeError("Database startup check failed")
+                tasks: list[asyncio.Task[None]] = []
+
+                async def workers() -> None:
+                    """Hold all background work until the companion commits startup validation."""
+                    while maintenance():  # noqa: ASYNC110 - the activation gate is owned by another process
+                        await asyncio.sleep(1)
+                    async with asyncio.TaskGroup() as group:
+                        group.create_task(engine.run())
+                        group.create_task(telegram.run())
+                        group.create_task(DownloadTracker(engine).run())
+                        group.create_task(updates.run())
+
+                if background:
+                    tasks.append(asyncio.create_task(workers()))
                 app.state.tasks = tasks
                 try:
                     yield
@@ -154,6 +170,8 @@ def create_app(
             "locale": language,
             "languages": list(zip(LOCALES, LANGUAGES, strict=True)),
             "t": lambda key: translate(language, key),
+            "update_ui": update_view(request.app.state.updates.status, request.app.state.updates.job,
+                                     gated=maintenance()),
             **extra,
         }
         response = templates.TemplateResponse(request=request, name="app.html", context=context)
@@ -208,6 +226,8 @@ def create_app(
     @app.middleware("http")
     async def security_headers(request: Request, call_next: Any) -> Response:
         """Apply same-origin content restrictions and block framing of app responses."""
+        if maintenance() and request.method not in {"GET", "HEAD"}:
+            return JSONResponse({"detail": "Addarr is updating. Please wait."}, status_code=503, headers={"Retry-After": "5"})
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -259,7 +279,8 @@ def create_app(
         """Report whether every configured background task is still running."""
         tasks = request.app.state.tasks
         ok = not any(task.done() for task in tasks)
-        return JSONResponse({"ok": ok}, status_code=200 if ok else 503)
+        return JSONResponse({"ok": ok, "maintenance": maintenance(), "revision": installed_revision(),
+                             "updater_protocol": PROTOCOL}, status_code=200 if ok else 503)
 
     @app.get("/login")
     async def login_page(request: Request) -> Response:
@@ -335,7 +356,7 @@ def create_app(
         st = store(request)
         recent_requests = st.all(
             "SELECT requests.*,users.name FROM requests JOIN users ON users.id=requests.user_id "
-            "ORDER BY requests.id DESC LIMIT 5"
+            "WHERE requests.deleted=0 ORDER BY requests.id DESC LIMIT 5"
         )
         for row in recent_requests:
             row["media"] = json.loads(row["media"])
@@ -343,7 +364,7 @@ def create_app(
             request,
             "dashboard",
             counts={
-                r["state"]: r["n"] for r in st.all("SELECT state,COUNT(*) n FROM requests GROUP BY state")
+                r["state"]: r["n"] for r in st.all("SELECT state,COUNT(*) n FROM requests WHERE deleted=0 GROUP BY state")
             },
             health=request.app.state.engine.health,
             polling=st.setting("polling_enabled", False),
@@ -359,18 +380,19 @@ def create_app(
         offset = max(0, int(request.query_params.get("offset", "0")))
         rows = store(request).all(
             "SELECT requests.*,users.name FROM requests JOIN users ON users.id=requests.user_id "
-            "ORDER BY requests.id DESC LIMIT 50 OFFSET ?",
+            "WHERE requests.deleted=0 ORDER BY requests.id DESC LIMIT 50 OFFSET ?",
             (offset,),
         )
         for row in rows:
             row["media"] = json.loads(row["media"])
+            row["downloads"] = request_downloads(store(request), row)
         return page(request, "requests", requests=rows, offset=offset)
 
     @app.post("/requests/{request_id}/{action}")
     async def request_action(request: Request, request_id: int, action: str) -> Response:
         """Authenticate a form action and let the engine validate the requested state transition."""
         await form(request)
-        request.app.state.engine.action(request_id, action, admin(request)["username"], web_admin=True)
+        await request.app.state.engine.manage_request(request_id, action, admin(request)["username"])
         return RedirectResponse("/requests", status_code=303)
 
     @app.get("/users")
@@ -468,6 +490,109 @@ def create_app(
         admin(request)
         return await service_page(request)
 
+    async def sab_choices(request: Request) -> dict[str, Any]:
+        """Load client names concurrently so an offline Arr service cannot stall the form."""
+        choices: dict[str, Any] = {}
+
+        async def load(kind: str, client: ArrClient) -> None:
+            try:
+                async with asyncio.timeout(6):
+                    choices[kind] = await download_clients(client)
+            except (ServiceError, TimeoutError, httpx.HTTPError, ValueError):
+                choices[kind] = []
+
+        await asyncio.gather(*(load(kind, client) for kind, client in
+                               configured_clients(store(request), request.app.state.engine.http).items()))
+        return choices
+
+    @app.get("/downloads")
+    async def downloads_page(request: Request) -> Response:
+        """Show optional SAB credentials and sanitized Arr download-client choices."""
+        admin(request)
+        return page(request, "downloads", sab=store(request).setting("sabnzbd", {}), choices=await sab_choices(request),
+                    tested=request.query_params.get("tested") == "1")
+
+    @app.post("/downloads")
+    async def downloads_save(request: Request) -> Response:
+        """Test or save the optional integration, keeping an unchanged API key private."""
+        data = await form(request)
+        st = store(request)
+        old = st.setting("sabnzbd", {})
+        draft = st.setting(f"sab_draft:{admin(request)['id']}", {})
+        if draft.get("expires", 0) > time.time() and str(data.get("url")) == draft["config"]["url"]:
+            old = draft["config"]
+        config = SabnzbdConfig.model_validate({
+            "url": str(data.get("url", "")), "api_key": str(data.get("api_key") or old.get("api_key", "")),
+            "enabled": data.get("enabled") == "on",
+            "mappings": {kind: int(str(data[kind])) for kind in ("radarr", "sonarr", "lidarr") if data.get(kind)},
+        })
+        if not config.api_key:
+            raise ValueError("API key is required")
+        testing = data.get("action") == "test"
+        if testing or config.enabled:
+            await SabnzbdClient(config, request.app.state.engine.http).read("queue", limit=1)
+        choices = await sab_choices(request) if testing or config.enabled else {}
+        if config.enabled:
+            for kind, client_id in config.mappings.items():
+                if client_id not in {c["id"] for c in choices.get(kind, [])}:
+                    raise ValueError("Select an existing SABnzbd download client")
+        if testing:
+            # Test does not silently enable or replace the active integration.
+            # Keep the tested secret in a short-lived admin-bound server-side draft.
+            st.set_setting(f"sab_draft:{admin(request)['id']}", {"config": config.model_dump(mode="json"), "expires": time.time() + 900})
+            return page(request, "downloads", sab=config.model_dump(mode="json"), choices=choices, tested=True)
+        st.set_setting("sabnzbd", config.model_dump(mode="json"))
+        st.execute("DELETE FROM settings WHERE key=?", (f"sab_draft:{admin(request)['id']}",))
+        st.audit(admin(request)["username"], "sabnzbd_settings")
+        return RedirectResponse("/downloads", status_code=303)
+
+    @app.get("/updates")
+    async def updates_page(request: Request) -> Response:
+        """Show one update status and a direct installation button."""
+        admin(request)
+        updates = request.app.state.updates
+        if not updates.status["checked"] and not maintenance():
+            await updates.check()
+        job = await updates.companion()
+        return page(request, "updates", update_ui=update_view(updates.status, job, gated=maintenance()))
+
+    @app.get("/updates/status")
+    async def update_status(request: Request) -> dict[str, Any]:
+        """Poll authenticated update progress while the browser waits for reconnection."""
+        admin(request)
+        job = await request.app.state.updates.companion()
+        view = update_view(request.app.state.updates.status, job, gated=maintenance())
+        view["message"] = translate(locale(request), view["message_key"])
+        return {"job": job, "view": view, "maintenance": maintenance(),
+                "detail_message": translate(locale(request), "update_" + job["phase"])}
+
+    @app.post("/updates/check")
+    async def update_check(request: Request) -> Response:
+        """Check explicitly without starting an installation."""
+        await form(request)
+        await request.app.state.updates.check()
+        return RedirectResponse("/diagnostics#updates", status_code=303)
+
+    @app.post("/updates/install")
+    async def update_install(request: Request) -> Response:
+        """Install only the commit the administrator reviewed, revalidated by the companion."""
+        data = await form(request)
+        updates = request.app.state.updates
+        if updates.install_lock.locked():
+            raise HTTPException(409, "An update is already starting")
+        async with updates.install_lock:
+            job = await updates.companion()
+            view = update_view(updates.status, job, gated=maintenance())
+            if not view["can_install"] or str(data.get("revision")) != view["revision"]:
+                raise ValueError("Check for updates before installing")
+            result = await updates.companion("POST", str(data["revision"]))
+            if not result.get("enabled"):
+                raise ServiceError("updates", "The update could not start. See diagnostics for details.")
+        store(request).audit(admin(request)["username"], "update_requested", detail=str(data["revision"]))
+        if "application/json" in request.headers.get("accept", ""):
+            return JSONResponse({"accepted": True}, status_code=202)
+        return RedirectResponse("/updates", status_code=303)
+
     @app.post("/services/{kind}")
     async def service_update(request: Request, kind: str) -> Response:
         """Test a draft or save service settings, retaining secrets when fields are blank.
@@ -537,6 +662,7 @@ def create_app(
             request,
             "settings",
             auto_approve_all=store(request).setting("auto_approve_all", False),
+            allowed_group_ids=store(request).setting("allowed_group_ids", []),
             polling=store(request).setting("polling_enabled", False),
             notifications={
                 key: store(request).setting(key, True)
@@ -555,6 +681,27 @@ def create_app(
             st.audit(
                 admin(request)["username"], "request_policy_updated", detail=f"auto_approve_all={enabled}"
             )
+        return RedirectResponse("/settings", status_code=303)
+
+    @app.post("/settings/groups")
+    async def group_settings_update(request: Request) -> Response:
+        """Save explicit Telegram group IDs without changing polling or private access.
+
+        Accept comma-separated IDs or one ID per line. Validate the complete
+        list before writing so a typo cannot partially replace the allowlist.
+        """
+        data = await form(request)
+        values = str(data.get("allowed_group_ids", "")).strip()
+        parts = [part for part in re.split(r"[\s,]+", values) if part]
+        if len(parts) > 50 or any(not re.fullmatch(r"-[1-9][0-9]{0,15}", part) for part in parts):
+            raise ValueError("Enter up to 50 negative Telegram group IDs")
+        groups = list(dict.fromkeys(int(part) for part in parts))
+        if any(group <= -(2**52) for group in groups):
+            raise ValueError("Invalid Telegram group ID")
+        st = store(request)
+        with st.transaction():
+            st.set_setting("allowed_group_ids", groups)
+            st.audit(admin(request)["username"], "group_access_updated", detail=json.dumps(groups))
         return RedirectResponse("/settings", status_code=303)
 
     @app.post("/settings")
@@ -627,9 +774,13 @@ def create_app(
         """Show cached health, worker status, uncertain operations and recent audit events."""
         admin(request)
         st, engine = store(request), request.app.state.engine
+        updates = request.app.state.updates
+        job = await updates.companion()
         return page(
             request,
             "diagnostics",
+            update=updates.status,
+            job=job,
             health=engine.health,
             worker={
                 "last_tick": engine.last_tick,

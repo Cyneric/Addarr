@@ -41,6 +41,91 @@ def setup(client, app):
     assert response.url.path == "/"
 
 
+def test_sabnzbd_settings_mask_secret_and_require_csrf(web, monkeypatch):
+    from addarr.downloads import SabnzbdClient
+
+    async def read(*args, **kwargs):
+        return {"queue": {"slots": []}}
+
+    monkeypatch.setattr(SabnzbdClient, "read", read)
+    client, app = web
+    setup(client, app)
+    assert client.post("/downloads", data={"url": "http://sab.test"}).status_code == 403
+    response = post(client, "/downloads", url="http://sab.test", api_key="SAB-PRIVATE", enabled="on", action="test")
+    assert response.status_code == 200
+    assert "SAB-PRIVATE" not in response.text
+    assert not app.state.store.setting("sabnzbd")
+    response = post(client, "/downloads", url="http://sab.test/", enabled="on", action="save")
+    assert response.status_code == 200
+    assert app.state.store.setting("sabnzbd")["api_key"] == "SAB-PRIVATE"
+    assert "SAB-PRIVATE" not in client.get("/downloads").text
+    post(client, "/downloads", url="http://sab.test", action="save")
+    assert not app.state.store.setting("sabnzbd")["enabled"]
+
+
+def test_updates_require_admin_and_only_offer_the_reviewed_commit(web):
+    client, app = web
+    assert client.get("/updates").url.path == "/login"
+    setup(client, app)
+    app.state.updates.status.update(checked=1, status="local_build")
+    response = client.get("/updates")
+    assert response.status_code == 200
+    assert "Updates are not available for this development build yet." in response.text
+    assert "update-versions" not in response.text
+    assert 'method="post" data-update-install hidden' in response.text
+    assert client.post("/updates/install", data={"revision": "a" * 40}).status_code == 403
+    assert post(client, "/updates/install", revision="a" * 40).status_code == 400
+    assert client.get("/updates/status").json()["job"]["enabled"] is False
+
+
+def test_simple_update_button_and_diagnostics_details(web, monkeypatch):
+    client, app = web
+    setup(client, app)
+    updates = app.state.updates
+    updates.status.update(current="1" * 40, latest="2" * 40, checked=1, available=True,
+                          status="update_available", commits=[{"sha": "2" * 40, "message": "A useful change"}])
+    updates.job = {"enabled": True, "phase": "idle"}
+    calls = []
+
+    async def companion(method="GET", revision=""):
+        calls.append((method, revision))
+        if method == "POST":
+            updates.job = {"enabled": True, "phase": "pulling", "id": "job", "revision": revision}
+        return updates.job
+
+    monkeypatch.setattr(updates, "companion", companion)
+    response = client.get("/")
+    assert 'href="/updates"' not in response.text
+    assert "Update now" in response.text
+    response = client.get("/updates")
+    assert 'data-confirm=' not in response.text
+    assert "A useful change" not in response.text and "1" * 40 not in response.text
+    details = client.get("/diagnostics").text
+    assert "A useful change" in details and "1" * 40 in details
+    data = {"csrf": client.cookies["csrf"], "revision": "2" * 40}
+    result = client.post("/updates/install", data=data, headers={"Accept": "application/json"})
+    assert result.status_code == 202
+    assert client.get("/updates/status").json()["view"]["message"] == "Updating…"
+    assert client.post("/updates/install", data=data).status_code == 400
+    assert sum(method == "POST" for method, _ in calls) == 1
+
+
+def test_update_start_lock_and_form_protection(web, monkeypatch):
+    client, app = web
+    setup(client, app)
+    updates = app.state.updates
+
+    class BusyLock:
+        def locked(self):
+            return True
+
+    monkeypatch.setattr(updates, "install_lock", BusyLock())
+    assert post(client, "/updates/install", revision="2" * 40).status_code == 409
+    assert client.post("/updates/install", data={"revision": "2" * 40}).status_code == 403
+    assert client.post("/updates/install", data={"csrf": client.cookies["csrf"]},
+                       headers={"Origin": "https://other.test"}).status_code == 403
+
+
 def test_bootstrap_login_logout_and_csrf(web):
     client, app = web
     setup(client, app)
@@ -73,10 +158,85 @@ def test_global_approval_setting_is_persistent_and_independent_of_bot_settings(w
     assert len(app.state.store.all("SELECT * FROM events WHERE action='request_policy_updated'")) == 2
 
 
+def test_group_allowlist_save_clear_and_authentication(web):
+    client, app = web
+    setup(client, app)
+    app.state.store.set_setting("telegram_token", "KEEP-TOKEN")
+    assert client.post("/settings/groups", data={"allowed_group_ids": "-1001"}).status_code == 403
+    response = post(client, "/settings/groups", allowed_group_ids="-1001\n-1002, -1001")
+    assert response.status_code == 200
+    assert app.state.store.setting("allowed_group_ids") == [-1001, -1002]
+    assert "-1001\n-1002</textarea>" in client.get("/settings").text
+    assert app.state.store.setting("telegram_token") == "KEEP-TOKEN"
+    post(client, "/settings/groups", allowed_group_ids="")
+    assert app.state.store.setting("allowed_group_ids") == []
+    post(client, "/logout")
+    assert post(client, "/settings/groups", allowed_group_ids="-1001").url.path == "/login"
+    assert app.state.store.setting("allowed_group_ids") == []
+
+
+@pytest.mark.parametrize("value", ["123", "0", "-0", "@group", "-1001,typo", "-9999999999999999"])
+def test_invalid_group_allowlist_preserves_saved_ids(web, value):
+    client, app = web
+    setup(client, app)
+    app.state.store.set_setting("allowed_group_ids", [-1001])
+    assert post(client, "/settings/groups", allowed_group_ids=value).status_code == 400
+    assert app.state.store.setting("allowed_group_ids") == [-1001]
+
+
+def request_record(app, state="submitted"):
+    """Seed one request for web action tests without contacting a media service."""
+    st = app.state.store
+    st.execute("INSERT OR IGNORE INTO users(id,name,status) VALUES(1,'Member','active')")
+    return st.execute(
+        "INSERT INTO requests(user_id,media,options,identity,scope,state,created,updated) "
+        "VALUES(1,?,'{}','movie:123','scope',?,1,1)",
+        (json.dumps({"service": "radarr", "title": "Removal test movie"}), state),
+    ).lastrowid
+
+
+@pytest.mark.parametrize("state", ["pending", "queued", "submitting", "submitted", "failed"])
+def test_admin_can_cancel_active_request_from_web(web, state):
+    client, app = web
+    setup(client, app)
+    request_id = request_record(app, state)
+    assert f'action="/requests/{request_id}/cancel"' in client.get("/requests").text
+    assert post(client, f"/requests/{request_id}/cancel").status_code == 200
+    assert app.state.store.one("SELECT state FROM requests WHERE id=?", (request_id,))["state"] == "cancelled"
+    assert f'action="/requests/{request_id}/cancel"' not in client.get("/requests").text
+    assert f'action="/requests/{request_id}/delete"' in client.get("/requests").text
+
+
+@pytest.mark.parametrize("state", ["pending", "queued", "submitting", "submitted", "available", "failed", "cancelled", "rejected"])
+def test_admin_delete_hides_request_from_history_and_dashboard(web, state):
+    client, app = web
+    setup(client, app)
+    request_id = request_record(app, state)
+    assert 'data-confirm=' in client.get("/requests").text
+    assert post(client, f"/requests/{request_id}/delete").status_code == 200
+    for path in ("/requests", "/"):
+        assert "Removal test movie" not in client.get(path).text
+    assert app.state.store.one("SELECT deleted FROM requests WHERE id=?", (request_id,))["deleted"] == 1
+    assert app.state.store.one("SELECT * FROM events WHERE request_id=? AND action='request_deleted'", (request_id,))
+    assert post(client, f"/requests/{request_id}/retry").status_code == 400
+
+
+def test_delete_requires_admin_session_and_csrf(web):
+    client, app = web
+    setup(client, app)
+    request_id = request_record(app)
+    assert client.post(f"/requests/{request_id}/delete").status_code == 403
+    assert app.state.store.one("SELECT deleted FROM requests WHERE id=?", (request_id,))["deleted"] == 0
+    post(client, "/logout")
+    assert post(client, f"/requests/{request_id}/delete").url.path == "/login"
+    assert app.state.store.one("SELECT deleted FROM requests WHERE id=?", (request_id,))["deleted"] == 0
+
+
 def test_all_admin_pages_and_locales(web):
     client, app = web
     setup(client, app)
-    for path in ("/", "/users", "/services", "/settings", "/requests", "/migration", "/diagnostics"):
+    app.state.updates.status.update(checked=1, status="local_build")
+    for path in ("/", "/users", "/services", "/settings", "/requests", "/migration", "/diagnostics", "/updates", "/downloads"):
         for language in ("en-us", "de-de", "es-es", "fr-fr", "it-it", "nl-be", "pl-pl", "pt-pt", "ru-ru"):
             response = client.get(path + "?lang=" + language)
             assert response.status_code == 200

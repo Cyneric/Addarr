@@ -171,6 +171,13 @@ class ArrClient:
                     seasons=[s["seasonNumber"] for s in row.get("seasons", [])],
                 )
             )
+        field = {"movie": "tmdbId", "series": "tvdbId", "artist": "foreignArtistId", "album": "foreignAlbumId"}[endpoint]
+        library = await self.call("GET", endpoint)
+        if not isinstance(library, list) or any(not isinstance(item, dict) for item in library):
+            raise ServiceError("response", "Service returned an invalid library response")
+        known = {str(item.get(field)) for item in library}
+        for result in output:
+            result.in_library = result.ref.external_id in known
         return output
 
     async def validate_options(self, options: Options) -> Options:
@@ -210,7 +217,43 @@ class ArrClient:
     async def existing(self, endpoint: str, field: str, external: str) -> dict[str, Any] | None:
         """Find an existing library entry by external ID, returning None when absent."""
         rows = await self.call("GET", endpoint)
+        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+            raise ServiceError("response", "Service returned an invalid library response")
         return next((dict(row) for row in rows if str(row.get(field)) == external), None)
+
+    async def already_in_library(self, ref: MediaRef, options: Options) -> bool:
+        """Check the live library before accepting a new request.
+
+        Existing movies and whole-series/artist requests are duplicates even if
+        downloads are incomplete. Selected seasons and albums can still request
+        missing, unmonitored parts of an existing library entry. This guard is
+        for new requests; submit() must remain able to recover interrupted adds.
+        """
+        endpoint = "artist" if ref.kind == "album" else ref.kind
+        field = {"movie": "tmdbId", "series": "tvdbId", "artist": "foreignArtistId"}[endpoint]
+        item = await self.existing(endpoint, field, ref.artist_id or ref.external_id)
+        if item is None:
+            return False
+        if ref.kind == "series" and options.monitoring == "selected" and options.seasons:
+            episodes = await self.call("GET", "episode", params={"seriesId": item["id"]})
+            seasons = {season["seasonNumber"]: season for season in item.get("seasons", [])}
+            for number in options.seasons:
+                season = seasons.get(number, {})
+                files = [episode for episode in episodes if episode["seasonNumber"] == number]
+                if not season.get("monitored") and not (files and all(e.get("hasFile") for e in files)):
+                    return False
+            return True
+        if ref.kind == "album":
+            albums = await self.call("GET", "album", params={"artistId": item["id"]})
+            album = next((a for a in albums if str(a.get("foreignAlbumId")) == ref.external_id), None)
+            if album is None:
+                return False
+            stats = album.get("statistics", {})
+            total = stats.get("totalTrackCount", stats.get("trackCount", 0))
+            return bool(album.get("monitored") or total > 0 and stats.get("trackFileCount", 0) >= total)
+        if ref.kind in ("series", "artist") and options.monitoring == "future":
+            return bool(item.get("monitored") and item.get("monitorNewItems") == "all")
+        return True
 
     async def tags(self, user_id: int) -> list[int]:
         """Resolve configured tag labels to remote IDs, creating missing tags as needed."""

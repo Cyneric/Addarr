@@ -42,34 +42,55 @@ class Engine:
             raise ServiceError("disabled", "This media service is not configured or enabled")
         return client
 
-    def authorize(self, user_id: int, admin: bool = False) -> dict[str, Any]:
-        """Return an active user, raising PermissionError for missing access or a required admin role."""
+    def authorize(self, user_id: int, admin: bool = False, *, chat_id: int | None = None) -> dict[str, Any]:
+        """Authorize private access or membership in an allowed request group.
+
+        Group access does not activate a pending private account or grant its
+        proposed admin role. Revoked users are denied in every chat.
+        """
         user = self.store.user(user_id)
-        if not user or user["status"] != "active" or (admin and user["role"] != "admin"):
+        if not user or user["status"] == "revoked":
             raise PermissionError("Access has not been approved")
+        if chat_id is not None:
+            if not self.store.group_allowed(chat_id):
+                raise PermissionError("Group is not allowed")
+            if user["status"] != "active":
+                user = {**user, "role": "member", "auto_approve": 0}
+        elif user["status"] != "active":
+            raise PermissionError("Access has not been approved")
+        if admin and user["role"] != "admin":
+            raise PermissionError("Administrator role required")
         return user
 
-    async def search(self, user_id: int, kind: str, term: str, media_kind: str = "") -> list[SearchResult]:
+    async def search(
+        self, user_id: int, kind: str, term: str, media_kind: str = "", *, chat_id: int | None = None
+    ) -> list[SearchResult]:
         """Authorize a user, validate the search length and query the selected service."""
-        self.authorize(user_id)
+        self.authorize(user_id, chat_id=chat_id)
         if not 1 <= len(term.strip()) <= 200:
             raise ValueError("Search must contain 1–200 characters")
         return await self.client(kind).search(term.strip(), media_kind)
 
-    async def create(self, user_id: int, ref: MediaRef, options: Options) -> int:
+    async def create(
+        self, user_id: int, ref: MediaRef, options: Options, *,
+        chat_id: int | None = None, thread_id: int | None = None,
+    ) -> int:
         """Validate a selection and persist a new request, or return its existing ID.
 
-        An active request with the same user, media, service instance and options
+        Existing library entries are rejected before storing a request. An active
+        request with the same user, media, service instance, options and chat/topic
         is reused. New requests are queued for admins or an auto-approval policy;
         others remain pending. Access is rechecked after remote option validation.
         No media is added remotely until the worker submits the queued request.
         """
-        self.authorize(user_id)
+        self.authorize(user_id, chat_id=chat_id)
         client = self.client(ref.service)
         options = await client.validate_options(options)
         if ref.kind == "series" and options.monitoring == "selected" and not options.seasons:
             raise ValueError("Select at least one season")
         options.seasons = sorted(set(options.seasons))
+        if await client.already_in_library(ref, options):
+            raise ServiceError("already_exists", "This item is already in the library")
         identity = client.identity(ref)
         scope = hashlib.sha256(
             json.dumps(
@@ -85,11 +106,11 @@ class Engine:
             ).encode()
         ).hexdigest()
         with self.store.transaction():
-            user = self.authorize(user_id)
+            user = self.authorize(user_id, chat_id=chat_id)
             duplicate = self.store.one(
-                "SELECT id FROM requests WHERE user_id=? AND scope=? "
-                "AND state NOT IN ('rejected','cancelled','failed')",
-                (user_id, scope),
+                "SELECT id FROM requests WHERE user_id=? AND scope=? AND chat_id IS ? AND thread_id IS ? "
+                "AND deleted=0 AND state NOT IN ('rejected','cancelled','failed')",
+                (user_id, scope, chat_id, thread_id),
             )
             if duplicate:
                 return int(duplicate["id"])
@@ -101,9 +122,10 @@ class Engine:
             state = "queued" if auto_approve else "pending"
             now = time.time()
             cursor = self.store.execute(
-                "INSERT INTO requests(user_id,media,options,identity,scope,state,created,updated) "
-                "VALUES(?,?,?,?,?,?,?,?)",
-                (user_id, ref.model_dump_json(), options.model_dump_json(), identity, scope, state, now, now),
+                "INSERT INTO requests(user_id,media,options,identity,scope,state,created,updated,chat_id,thread_id) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                (user_id, ref.model_dump_json(), options.model_dump_json(), identity, scope, state, now, now,
+                 chat_id, thread_id),
             )
             assert cursor.lastrowid is not None
             request_id = cursor.lastrowid
@@ -126,13 +148,18 @@ class Engine:
         )
         notification_group = (
             "notify_availability"
-            if state in ("available", "progress")
+            if state in ("available", "progress", "downloading", "download_queued", "download_paused",
+                         "download_checking", "download_extracting", "waiting_import")
             else "notify_failures"
-            if state == "failed"
+            if state in ("failed", "download_failed")
             else "notify_requests"
         )
         if not self.store.setting(notification_group, True):
             return
+        if self.store.group_allowed(row["chat_id"]):
+            owner = self.store.user(row["user_id"])
+            if owner and owner["status"] != "revoked":
+                recipients.append({"chat_id": row["chat_id"], "locale": owner["locale"]})
         for user in recipients:
             payload = {
                 "id": request_id,
@@ -141,12 +168,14 @@ class Engine:
                 "progress": row["progress"],
             }
             self.store.execute(
-                "INSERT OR IGNORE INTO outbox(event_id,chat_id,locale,key,payload) VALUES(?,?,?,?,?)",
-                (event_id, user["chat_id"], user["locale"], "notification", json.dumps(payload)),
+                "INSERT OR IGNORE INTO outbox(event_id,chat_id,locale,key,payload,thread_id) VALUES(?,?,?,?,?,?)",
+                (event_id, user["chat_id"], user["locale"], "notification", json.dumps(payload),
+                 row["thread_id"] if user["chat_id"] == row["chat_id"] else None),
             )
 
     def action(
-        self, request_id: int, action: str, actor: str, *, user_id: int | None = None, web_admin: bool = False
+        self, request_id: int, action: str, actor: str, *, user_id: int | None = None, web_admin: bool = False,
+        chat_id: int | None = None, thread_id: int | None = None,
     ) -> None:
         """Apply an allowed request transition and audit it in one transaction.
 
@@ -156,11 +185,13 @@ class Engine:
         PermissionError; stale or unsupported transitions raise ValueError.
         """
         with self.store.transaction():
-            user = self.authorize(user_id) if user_id is not None else None
+            user = self.authorize(user_id, chat_id=chat_id) if user_id is not None else None
             is_admin = web_admin or bool(user and user["role"] == "admin")
-            row = self.store.one("SELECT * FROM requests WHERE id=?", (request_id,))
+            row = self.store.one("SELECT * FROM requests WHERE id=? AND deleted=0", (request_id,))
             if not row or not (is_admin or user and row["user_id"] == user["id"]):
                 raise PermissionError("Request is not accessible")
+            if chat_id is not None and (row["chat_id"] != chat_id or row["thread_id"] != thread_id):
+                raise PermissionError("Request belongs to another chat")
             transitions = {
                 "approve": ("pending", "queued"),
                 "reject": ("pending", "rejected"),
@@ -182,6 +213,45 @@ class Engine:
             )
             self.event(request_id, actor, target)
 
+    async def manage_request(self, request_id: int, action: str, actor: str) -> None:
+        """Apply a web administrator action after any in-flight worker tick finishes.
+
+        The web route must authenticate the administrator and validate CSRF first.
+        Cancellation stops Addarr tracking; it cannot undo a remote submission.
+        Deletion hides the record and discards unsent notifications, retaining IDs
+        and audit history so old callbacks and command ledger entries stay valid.
+        The worker lock prevents an awaited submission or poll from restoring it.
+        """
+        async with self._lock:
+            with self.store.transaction():
+                row = self.store.one("SELECT * FROM requests WHERE id=? AND deleted=0", (request_id,))
+                if not row:
+                    raise ValueError("Request no longer exists")
+                if action == "delete":
+                    self.store.execute("UPDATE requests SET deleted=1,updated=? WHERE id=?",
+                                       (time.time(), request_id))
+                    self.store.execute(
+                        "UPDATE outbox SET state='discarded' WHERE state='pending' AND event_id IN "
+                        "(SELECT id FROM events WHERE request_id=?)", (request_id,),
+                    )
+                    self.store.audit(actor, "request_deleted", request_id)
+                    return
+                if action == "cancel":
+                    if row["state"] not in ("pending", "queued", "submitting", "submitted", "failed"):
+                        raise ValueError("This request can no longer be cancelled")
+                    self.store.execute(
+                        "UPDATE outbox SET state='discarded' WHERE state='pending' AND event_id IN "
+                        "(SELECT id FROM events WHERE request_id=?)", (request_id,),
+                    )
+                    self.store.execute(
+                        "UPDATE requests SET state='cancelled',error='',next_attempt=0,updated=? WHERE id=?",
+                        (time.time(), request_id),
+                    )
+                    self.event(request_id, actor, "cancelled")
+                    return
+            # action() owns its transaction for the ordinary approval transitions.
+            self.action(request_id, action, actor, web_admin=True)
+
     async def tick(self) -> None:
         """Process at most one due request, then poll progress and refresh due health checks.
 
@@ -192,13 +262,14 @@ class Engine:
         async with self._lock:
             self.last_tick = time.time()
             row = self.store.one(
-                "SELECT * FROM requests WHERE state='queued' AND next_attempt<=? ORDER BY id LIMIT 1",
+                "SELECT * FROM requests WHERE deleted=0 AND state='queued' AND next_attempt<=? ORDER BY id LIMIT 1",
                 (time.time(),),
             )
             if row:
                 with self.store.transaction():
-                    owner = self.store.user(row["user_id"])
-                    if not owner or owner["status"] != "active":
+                    try:
+                        self.authorize(row["user_id"], chat_id=row["chat_id"])
+                    except PermissionError:
                         self.store.execute(
                             "UPDATE requests SET state='failed',error=? WHERE id=?",
                             ("Requester access was revoked", row["id"]),
@@ -270,7 +341,7 @@ class Engine:
     async def poll_progress(self) -> None:
         """Poll up to five due submissions, scheduling the next check and recording progress changes."""
         rows = self.store.all(
-            "SELECT * FROM requests WHERE state='submitted' AND next_attempt<=? ORDER BY next_attempt LIMIT 5",
+            "SELECT * FROM requests WHERE deleted=0 AND state='submitted' AND next_attempt<=? ORDER BY next_attempt LIMIT 5",
             (time.time(),),
         )
         for row in rows:
@@ -317,7 +388,7 @@ class Engine:
         Unexpected tick failures are logged without exception details that could
         expose credentials, and the loop resumes after one second.
         """
-        self.store.execute("UPDATE requests SET state='queued',next_attempt=0 WHERE state='submitting'")
+        self.store.execute("UPDATE requests SET state='queued',next_attempt=0 WHERE deleted=0 AND state='submitting'")
         while True:
             try:
                 await self.tick()
