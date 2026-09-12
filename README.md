@@ -59,16 +59,31 @@ Settings, users and request history are stored in `/config`. Keep this directory
 | `/status` | Check the connected services |
 | `/help` | Show instructions |
 | `/cancel` | Cancel the current search or selection |
+| `/chatid` | Show the current group's ID |
 
 Choose a result, check the details and confirm. Requests use the admin's defaults unless you select other permitted profiles, folders or monitoring options.
 
-Album requests monitor only the selected album. Additional requests preserve existing library settings.
+Search results mark items already in the library. Addarr checks again before accepting a request. Existing movies and whole-series requests are rejected, including items still downloading. You can still request missing, unmonitored seasons through **Options**. Album requests monitor only the selected album. Additional requests preserve existing library settings.
 
 Added requests have reached Radarr, Sonarr or Lidarr but may not have finished downloading. Addarr checks availability and sends updates through Telegram. Adjust notifications in **Settings**.
 
-To skip manual approval, enable **Automatically approve all requests** under **Settings > Requests**. This applies to new requests from active users. Existing pending requests still need review. When this option is off, per-user automatic approval still applies.
+Admins can cancel or delete requests on the web **Requests** page. Cancelling stops Addarr from submitting or tracking the request. Deleting removes it from the lists while keeping audit history. Neither action removes media or stops downloads already running in Radarr, Sonarr or Lidarr.
+
+To skip manual approval, enable **Automatically approve all requests** under **Settings > Requests**. This applies to new requests from approved users and members of allowed groups. Existing pending requests still need review. When this option is off, per-user automatic approval still applies.
 
 The bot and web interface support English, German, Spanish, French, Italian, Dutch, Polish, Portuguese and Russian. Each has a language selector.
+
+### Group chats
+
+1. Add the bot to your Telegram group and send `/chatid@YourBot`, using your bot's username. It replies with the group ID even before the group is allowed.
+2. In **Settings > Group chats**, enter that ID and save. Use one ID per line or separate them with commas. An empty list disables group access.
+3. Send `/movie@YourBot` or `/series@YourBot` and reply to the bot's search prompt. You can also include a title directly, such as `/movie@YourBot Alien`.
+
+Everyone in an allowed group can request without individual approval for access. Blocked users remain blocked, and request approval follows the same settings as private chats. Group access does not grant private-chat access or an admin role. Only the person who started a selection can use its buttons.
+
+Searches stay separate for each person, group and forum topic. `/requests` shows your requests from the current group and topic. Updates return to that group or topic; private requests are not posted there. Removing a group ID stops its queued submissions and notifications. If Telegram converts a group to a supergroup, replace its old ID with the new one.
+
+Telegram privacy mode can stay enabled: addressed commands and replies to the bot are sufficient. See [Telegram's explanation](https://core.telegram.org/bots/faq#what-messages-will-my-bot-get). Broadcast channels and anonymous group senders are not supported.
 
 ## Migration
 
@@ -89,7 +104,37 @@ The old code is tagged as `legacy/pre-v2`.
 
 ### Not supported in v2 yet
 
-Download-client controls, library deletion, group chats, multiple instances of the same service, native installers and Helm are not included. The old `src/`, `helm/` and installer files remain in the repository but are not used by v2. Do not use the old install scripts with this branch.
+Download-client controls, library deletion, broadcast channels, multiple instances of the same service, native installers and Helm are not included. The old `src/`, `helm/` and installer files remain in the repository but are not used by v2. Do not use the old install scripts with this branch.
+
+## Download progress
+
+Open **Downloads** to connect SABnzbd. Enter its URL and API key, test the
+connection, then enable it. Addarr finds the SABnzbd clients configured in your
+Arr services. If a service has several clients, select the one using this
+SABnzbd instance.
+
+Request cards and Telegram's `/requests` show download progress, pauses,
+post-processing and failures. Telegram sends a message when the download phase
+changes, not whenever the percentage changes. A download is only marked available
+after the Arr service has imported the files.
+
+Tracking uses media and download IDs, so similarly named releases cannot be
+mistaken for each other. Addarr only reads SABnzbd status. Cancelling a request
+in Addarr stops tracking it; it does not remove the download from SABnzbd.
+
+## Updates
+
+Addarr checks for updates every hour. When one is ready, **Update available**
+appears at the top of the app. Click **Update now** to install it. The app shows
+**Updating…** while it restarts, then **Updated** when it is ready.
+
+Build information, connection details and a manual check are under
+**Diagnostics → Updates**.
+
+Web installation needs the optional updater companion. It backs up your data,
+replaces the container and restores the previous version if startup fails.
+See [Updating Addarr](docs/UPDATES.md) for setup and recovery details. Local
+development builds cannot install updates automatically.
 
 ## Backups and password recovery
 
