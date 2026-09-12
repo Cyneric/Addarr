@@ -27,3 +27,4 @@ dist/
 *.db-wal
 artifacts/
 .env
+config-updater-token

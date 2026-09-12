@@ -4,6 +4,9 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --require-hashes -r requirements.txt && groupadd --gid 1000 addarr && useradd --uid 1000 --gid 1000 --no-create-home addarr && mkdir /config && chown 1000:1000 /config
 COPY addarr /app/addarr
+ARG ADDARR_REVISION=unknown
+ENV ADDARR_REVISION=${ADDARR_REVISION}
+LABEL org.opencontainers.image.revision=${ADDARR_REVISION} io.addarr.updater.protocol="1"
 USER 1000:1000
 VOLUME ["/config"]
 EXPOSE 8090

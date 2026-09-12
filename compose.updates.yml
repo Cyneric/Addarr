@@ -1,0 +1,44 @@
+# Filename: compose.updates.yml
+# Author: Christian Blank
+# Created Date: 2026-09-12
+# Description: Optional Docker updater companion and shared recovery state.
+# Optional companion. Use together with docker-compose.yml after reading docs/UPDATES.md.
+services:
+  addarr:
+    container_name: ${ADDARR_CONTAINER_NAME:-addarr}
+    image: ghcr.io/cyneric/addarr:${ADDARR_VERSION:-main}
+    labels:
+      io.addarr.updates: enabled
+    environment:
+      ADDARR_UPDATER_URL: http://updater:8091
+      ADDARR_UPDATER_TOKEN_FILE: /run/secrets/updater_token
+    secrets: [updater_token]
+    volumes:
+      - update_state:/updates:ro
+  updater:
+    image: ghcr.io/cyneric/addarr:updater-v1
+    entrypoint: [python, -m, addarr.updater]
+    user: "0:0"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    security_opt: [no-new-privileges:true]
+    environment:
+      ADDARR_UPDATE_TARGET: ${ADDARR_CONTAINER_NAME:-addarr}
+      ADDARR_UPDATER_TOKEN_FILE: /run/secrets/updater_token
+    secrets: [updater_token]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${ADDARR_CONFIG:-./config}:/config
+      - update_state:/state
+    healthcheck:
+      disable: true
+    stop_grace_period: 10m
+volumes:
+  update_state:
+secrets:
+  updater_token:
+    file: ${ADDARR_UPDATER_SECRET:-./config-updater-token}
