@@ -360,6 +360,10 @@ def create_app(
         )
         for row in recent_requests:
             row["media"] = json.loads(row["media"])
+            seasons = json.loads(row["options"]).get("seasons", [])
+            row["season"] = seasons[0] if len(seasons) == 1 else None
+            downloads = request_downloads(st, row)
+            row["download"] = downloads[0] if len(downloads) == 1 else None
         return page(
             request,
             "dashboard",
@@ -367,7 +371,6 @@ def create_app(
                 r["state"]: r["n"] for r in st.all("SELECT state,COUNT(*) n FROM requests WHERE deleted=0 GROUP BY state")
             },
             health=request.app.state.engine.health,
-            polling=st.setting("polling_enabled", False),
             online=request.app.state.telegram.online,
             pending_users=st.all("SELECT COUNT(*) n FROM users WHERE status='pending'")[0]["n"],
             recent_requests=recent_requests,

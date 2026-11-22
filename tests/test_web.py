@@ -5,8 +5,10 @@ Created Date: 2026-09-11
 Description: Web checks for authentication, service settings, request policies and administration.
 """
 
+import hashlib
 import json
 import sqlite3
+import time
 
 import httpx
 import pytest
@@ -264,7 +266,43 @@ def test_overview_shows_latest_five_requests_and_escapes_titles(web):
     assert "film-0" not in response.text
     assert "<film-5>" not in response.text
     assert response.text.index("&lt;film-5&gt;") < response.text.index("&lt;film-1&gt;")
-    assert response.text.count('class="recent-row"') == 5
+    assert response.text.count('class="overview-row"') == 5
+    assert 'href="/requests#request-6"' in response.text
+    assert 'id="request-6"' in client.get("/requests").text
+
+
+def test_overview_shows_only_unambiguous_download_progress(web):
+    client, app = web
+    setup(client, app)
+    st = app.state.store
+    st.set_setting("sabnzbd", {"url": "http://sab.test", "api_key": "test", "enabled": True})
+    instance = hashlib.sha256(b"http://sab.test").hexdigest()[:16]
+    st.execute("INSERT INTO users(id,name) VALUES(1,'Viewer')")
+    st.execute(
+        "INSERT INTO requests(id,user_id,media,options,identity,scope,state,created,updated) "
+        "VALUES(1,1,?,?,'test','test','submitted',0,0)",
+        (json.dumps({"service": "sonarr", "kind": "series", "title": "Severance"}), '{"seasons":[2]}'),
+    )
+    st.execute(
+        "INSERT INTO downloads(id,instance,nzo_id,phase,percent,seen) VALUES(1,?,'one','downloading',64,?)",
+        (instance, time.time()),
+    )
+    st.execute("INSERT INTO request_downloads(request_id,download_id) VALUES(1,1)")
+    overview = client.get("/").text
+    assert "Season 2 / Sonarr / Viewer" in overview
+    assert "Downloading 64%" in overview
+    assert '<progress max="100" value="64.0"' in overview
+
+    st.execute("UPDATE downloads SET seen=0")
+    assert "<progress" not in client.get("/").text
+
+    st.execute("UPDATE downloads SET seen=?", (time.time(),))
+    st.execute(
+        "INSERT INTO downloads(id,instance,nzo_id,phase,percent,seen) VALUES(2,?,'two','downloading',38,?)",
+        (instance, time.time()),
+    )
+    st.execute("INSERT INTO request_downloads(request_id,download_id) VALUES(1,2)")
+    assert "<progress" not in client.get("/").text
 
 
 def test_connection_test_save_and_no_secret_reflection(web):

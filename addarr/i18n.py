@@ -2057,6 +2057,71 @@ MESSAGES.update({'update_now': ('Update now',
                             'A verificar atualizações…',
                             'Проверка обновлений…')})
 
+MESSAGES.update({
+    "overview_view_all": (
+        "View all requests", "Alle Anfragen ansehen", "Ver todas las solicitudes",
+        "Voir toutes les demandes", "Vedi tutte le richieste", "Alle aanvragen bekijken",
+        "Zobacz wszystkie zgłoszenia", "Ver todos os pedidos", "Все запросы",
+    ),
+    "overview_view_request": (
+        "View request", "Anfrage ansehen", "Ver solicitud", "Voir la demande", "Vedi richiesta",
+        "Aanvraag bekijken", "Zobacz zgłoszenie", "Ver pedido", "Открыть запрос",
+    ),
+    "overview_review": (
+        "Review", "Prüfen", "Revisar", "Examiner", "Esamina", "Beoordelen", "Sprawdź", "Rever", "Проверить",
+    ),
+    "overview_submitted": (
+        "With media service", "Beim Mediendienst", "En el servicio multimedia", "Chez le service média",
+        "Nel servizio multimediale", "Bij de mediaservice", "W usłudze multimedialnej",
+        "No serviço multimédia", "В медиасервисе",
+    ),
+    "overview_movie": ("Movie", "Film", "Película", "Film", "Film", "Film", "Film", "Filme", "Фильм"),
+    "overview_album": ("Album", "Album", "Álbum", "Album", "Album", "Album", "Album", "Álbum", "Альбом"),
+    "overview_artist": ("Artist", "Interpret", "Artista", "Artiste", "Artista", "Artiest", "Wykonawca", "Artista", "Исполнитель"),
+    "overview_season": ("Season", "Staffel", "Temporada", "Saison", "Stagione", "Seizoen", "Sezon", "Temporada", "Сезон"),
+    "overview_connected": (
+        "Connected", "Verbunden", "Conectado", "Connecté", "Connesso", "Verbonden",
+        "Połączono", "Ligado", "Подключено",
+    ),
+    "overview_connect_hint": (
+        "Connect your Telegram bot to start receiving requests.",
+        "Verbinde deinen Telegram-Bot, um Anfragen zu empfangen.",
+        "Conecta tu bot de Telegram para recibir solicitudes.",
+        "Connectez votre bot Telegram pour recevoir des demandes.",
+        "Collega il tuo bot Telegram per ricevere richieste.",
+        "Verbind je Telegram-bot om aanvragen te ontvangen.",
+        "Połącz bota Telegrama, aby odbierać zgłoszenia.",
+        "Liga o teu bot do Telegram para receber pedidos.",
+        "Подключите бота Telegram, чтобы получать запросы.",
+    ),
+    "overview_telegram_bot": (
+        "Telegram bot", "Telegram-Bot", "Bot de Telegram", "Bot Telegram", "Bot Telegram",
+        "Telegram-bot", "Bot Telegrama", "Bot do Telegram", "Бот Telegram",
+    ),
+    "overview_telegram_online": (
+        "Users send their requests through your Telegram bot.",
+        "Nutzer senden ihre Anfragen über deinen Telegram-Bot.",
+        "Los usuarios envían solicitudes a través de tu bot de Telegram.",
+        "Les utilisateurs envoient leurs demandes via votre bot Telegram.",
+        "Gli utenti inviano richieste tramite il tuo bot Telegram.",
+        "Gebruikers sturen aanvragen via je Telegram-bot.",
+        "Użytkownicy wysyłają zgłoszenia przez twojego bota Telegrama.",
+        "Os utilizadores enviam pedidos através do teu bot do Telegram.",
+        "Пользователи отправляют запросы через вашего бота Telegram.",
+    ),
+    "overview_telegram_settings": (
+        "Telegram settings", "Telegram-Einstellungen", "Ajustes de Telegram", "Paramètres Telegram",
+        "Impostazioni di Telegram", "Telegram-instellingen", "Ustawienia Telegrama",
+        "Definições do Telegram", "Настройки Telegram",
+    ),
+    "overview_pending_users": (
+        "Users awaiting approval", "Nutzer warten auf Freigabe", "Usuarios pendientes de aprobación",
+        "Utilisateurs à approuver", "Utenti in attesa di approvazione", "Gebruikers wachten op goedkeuring",
+        "Użytkownicy oczekujący na zatwierdzenie", "Utilizadores a aguardar aprovação", "Пользователи ожидают одобрения",
+    ),
+})
+
+
 def translate(locale: str, key: str, **values: object) -> str:
     """Format a message in the requested locale, falling back to English for unknown locales.
 

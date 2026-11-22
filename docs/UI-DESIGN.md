@@ -22,6 +22,12 @@ Radarr, Sonarr, Lidarr and Telegram use bundled upstream logos on their cards an
 
 Addarr's mark uses a segmented circular ring and a coral plus sign on a graphite base. Its shape fits alongside the other *arr services, while the plus identifies its request and add function. The header, sidebar and favicon all use `addarr/static/logos/addarr.svg`.
 
+## Overview
+
+The overview puts recent requests first. A filmstrip edge marks the list, and a single row of counters summarises the request states. Each request links to its existing controls. The overview shows download progress only when a request has one tracked job with a percentage. The request page shows each job when there are several.
+
+Media services and Telegram share a compact column beside the requests. On narrow screens they move below the list. The cinematic artwork stays on the login and setup screens.
+
 ## Artwork
 
 The original backdrop is saved at `addarr/static/cinema.png`. It was created with the built-in image generation tool. The application serves the asset locally, without an external image or font service.

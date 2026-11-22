@@ -32,24 +32,24 @@ Description: Shared page layout and administration screens.
 {% if not public %}
 <aside class="sidebar" id="navigation">
   <div class="sidebar-brand">{{ brand() }}<span class="version">v2</span></div>
-  <div class="workspace-label"><span class="dot online"></span>{{ t('private') }}</div>
+  <div class="workspace-label">{{ t('private') }}</div>
   <nav aria-label="{{ t('navigation') }}">
   <p class="nav-label">{{ t('workspace') }}</p>
   {% for key, href in [('dashboard','/'),('requests','/requests'),('users','/users'),('services','/services'),('downloads','/downloads'),('settings','/settings'),('migration','/migration'),('diagnostics','/diagnostics')] %}
     {% if key == 'services' %}<p class="nav-label nav-divider">{{ t('manage') }}</p>{% endif %}
-    <a href="{{ href }}" class="{{ 'selected' if section == key else '' }}" {{ 'aria-current=page' if section == key else '' }}>{{ icon(key) }}<span>{{ t(key) }}</span>{% if section == 'dashboard' and key == 'requests' and counts.get('pending',0) %}<span class="nav-count">{{ counts.pending }}</span>{% endif %}</a>
+    <a href="{{ href }}" class="{{ 'selected' if section == key else '' }}" {{ 'aria-current=page' if section == key else '' }}>{{ icon(key) }}<span>{{ t(key) }}</span></a>
   {% endfor %}
   </nav>
-  <div class="sidebar-bottom"><div class="sidebar-note">{{ icon('movie') }}{{ icon('series') }}{{ icon('music') }}</div>{{ action('/backup','backup','quiet') }}<form action="/logout" method="post">{{ csrf_input() }}<button class="quiet">{{ icon('logout') }}{{ t('logout') }}</button></form><small>Addarr v{{ version }}</small></div>
+  <div class="sidebar-bottom"><form method="post" action="/backup">{{ csrf_input() }}<button class="quiet">{{ icon('downloads') }}{{ t('backup') }}</button></form><form action="/logout" method="post">{{ csrf_input() }}<button class="quiet">{{ icon('logout') }}{{ t('logout') }}</button></form><small>Addarr v{{ version }}</small></div>
 </aside>
 <button class="nav-scrim" tabindex="-1" aria-label="{{ t('close_menu') }}" hidden></button>
 {% endif %}
-<main id="content" class="{{ 'public' if public else 'admin-main' }} {{ 'auth-page' if section in ['login','setup'] else '' }}">
+<main id="content" class="{{ 'public' if public else 'admin-main' }}{{ ' auth-page' if section in ['login','setup'] else '' }}{{ ' overview' if section == 'dashboard' else '' }}">
   {% if section not in ['login','setup'] %}
   <div class="topbar"><div><button class="menu-toggle icon-button" aria-label="{{ t('navigation') }}" aria-expanded="false" aria-controls="navigation">{{ icon('menu') }}</button><span>Addarr</span><span class="breadcrumb-divider">/</span><span>{{ t(section) }}</span></div>{{ language_picker() }}</div>
   {% if not public and section != 'updates' %}{{ update_control() }}{% endif %}
   <div class="page-content">
-  <header class="page-heading"><div><p class="eyebrow">{{ t('workspace') }}</p><h1>{{ t(section) }}</h1>{% if section~'_intro' in ['dashboard_intro','requests_intro','users_intro','services_intro','settings_intro','migration_intro','diagnostics_intro'] %}<p class="page-description">{{ t(section~'_intro') }}</p>{% endif %}</div><span class="section-emblem">{{ icon(section) }}</span></header>
+  <header class="page-heading"><div><h1>{{ t(section) }}</h1>{% if section~'_intro' in ['dashboard_intro','requests_intro','users_intro','services_intro','settings_intro','migration_intro','diagnostics_intro'] %}<p class="page-description">{{ t(section~'_intro') }}</p>{% endif %}</div>{% if section == 'dashboard' %}<a href="/requests" class="button overview-button">{{ t('overview_view_all') }}</a>{% else %}<span class="section-emblem">{{ icon(section) }}</span>{% endif %}</header>
   {% endif %}
   {% if section == 'error' %}
   <section class="card"><h2>{{ error }}</h2><p>{{ detail }}</p><a class="button" href="/">{{ t('back') }}</a></section>
@@ -77,23 +77,11 @@ Description: Shared page layout and administration screens.
   <div class="auth-bottom"><span>Addarr <span class="muted">v{{ version }}</span></span></div>
   </section>
   {% elif section == 'dashboard' %}
-  <section class="dashboard-feature"><div><p class="eyebrow">Telegram</p><h2>{{ t('requests') }}</h2><p>{{ t('dashboard_feature') }}</p><a href="/requests" class="button primary">{{ t('view_requests') }}{{ icon('arrow') }}</a></div><div class="feature-categories" aria-hidden="true">{{ icon('movie') }}{{ icon('series') }}{{ icon('music') }}</div></section>
-  <section class="stats">
-    {% for key in ['pending','queued','submitted','available'] %}<a class="card stat {{ key }}" href="/requests"><span><span class="status-dot"></span>{{ t(key) }}</span><strong>{{ '%02d'|format(counts.get(key,0)) }}</strong>{{ icon('external') }}</a>{% endfor %}
-  </section>
-  <div class="section-title"><h2>{{ t('your_services') }}</h2><a class="text-link" href="/services">{{ t('manage') }}{{ icon('arrow') }}</a></div>
-  <section class="service-grid">
-    {% for kind, category, glyph in [('radarr','movie','movie'),('sonarr','series','series'),('lidarr','music','music')] %}<a href="/services#{{ kind }}" class="card service-tile {{ kind }}"><div class="service-art">{{ app_logo(kind) }}<span>{{ t(category) }}</span></div><div class="service-tile-info"><div><h3>{{ kind|capitalize }}</h3><span class="service-meta">{{ health.get(kind,{}).get('version','') or t('service_connection') }}</span></div><span class="dot {{ 'online' if health.get(kind,{}).get('ok') else '' }}" aria-label="{{ t('active') if health.get(kind,{}).get('ok') else t('disconnected') }}"></span></div><div class="service-tile-footer"><span>{{ t('active') if health.get(kind,{}).get('ok') else t('disconnected') }}</span>{{ icon('external') }}</div></a>{% endfor %}
-  </section>
-  <section class="grid dashboard-bottom">
-    <div class="card recent-card"><div class="section-title"><h2>{{ t('recent_requests') }}</h2><a class="text-link" href="/requests">{{ t('view_all') }}{{ icon('arrow') }}</a></div>{% for row in recent_requests %}<a href="/requests" class="recent-row"><span class="request-art {{ row.media.service }}">{{ icon({'radarr':'movie','sonarr':'series','lidarr':'music'}.get(row.media.service,'movie')) }}</span><div><strong>{{ row.media.title }}</strong><span>{{ row.name }} · {{ row.media.service|capitalize }}</span></div><span class="pill {{ 'good' if row.state == 'available' else '' }}">{{ t(row.state) }}</span></a>{% else %}<div class="empty compact"><span class="empty-icon">{{ icon('requests') }}</span><h3>{{ t('no_requests') }}</h3><p>{{ t('requests_empty_hint') }}</p><a class="text-link" href="/settings">{{ t('connect_telegram') }}{{ icon('arrow') }}</a></div>{% endfor %}</div>
-    <div class="card telegram-card"><div class="section-title"><span class="telegram-icon">{{ app_logo('telegram') }}</span><span class="pill {{ 'good' if online else '' }}">{{ t('active') if online else t('disconnected') }}</span></div><h2>Telegram</h2><p>{{ t('telegram_description') }}</p><a class="text-link" href="/settings">{{ t('settings') if online else t('connect_telegram') }}{{ icon('arrow') }}</a><a class="telegram-users" href="/users">{{ icon('users') }}<span>{{ t('users') }} · {{ t('pending') }}</span><strong>{{ pending_users }}</strong></a></div>
-  </section>
-  <section class="callout"><span class="callout-icon">{{ icon('migration') }}</span><div><h3>{{ t('migration') }}</h3><p>{{ t('migration_hint') }}</p></div><a class="button" href="/migration">{{ t('preview') }}{{ icon('arrow') }}</a></section>
+  {% include 'overview.html' %}
   {% elif section == 'requests' %}
   <section class="request-list">
     {% for row in requests %}
-    <article class="card request"><div class="request-top"><span class="eyebrow">#{{ row.id }} / {{ row.media.service|upper }}</span><span class="pill {{ 'good' if row.state == 'available' else '' }}">{{ t(row.state) }}</span></div><h2>{{ row.media.title }}</h2><p>{{ row.name }} · {{ row.progress }}</p>
+    <article class="card request" id="request-{{ row.id }}" tabindex="-1"><div class="request-top"><span class="eyebrow">#{{ row.id }} / {{ row.media.service|upper }}</span><span class="pill {{ 'good' if row.state == 'available' else '' }}">{{ t(row.state) }}</span></div><h2>{{ row.media.title }}</h2><p>{{ row.name }} · {{ row.progress }}</p>
       {% if row.error %}<details class="error-detail"><summary>{{ t('diagnostics') }}</summary><p>{{ row.error }}</p></details>{% endif %}
       {% for download in row.downloads %}<div class="download-progress"><div><strong>{{ t(download.phase) }}</strong>{% if download.percent is not none %}<span>{{ '%.0f'|format(download.percent) }}%</span>{% endif %}</div>{% if download.percent is not none %}<progress max="100" value="{{ download.percent }}" aria-label="{{ t('downloads') }}"></progress>{% endif %}<small>{% if download.remaining is not none %}{{ '%.0f'|format(download.remaining) }} MB {{ t('remaining') }}{% endif %}{% if download.eta %} · {{ download.eta }}{% endif %}</small></div>{% endfor %}
       <div class="actions">{% if row.state == 'pending' %}{{ action('/requests/'~row.id~'/approve','approve','primary') }}{{ action('/requests/'~row.id~'/reject','reject') }}{% endif %}{% if row.state == 'failed' %}{{ action('/requests/'~row.id~'/retry','retry') }}{% endif %}{% if row.state in ['pending','queued','submitting','submitted','failed'] %}{{ action('/requests/'~row.id~'/cancel','cancel','quiet','cancel_request_confirm') }}{% endif %}{{ action('/requests/'~row.id~'/delete','delete_request','danger','delete_request_confirm') }}</div>
@@ -170,7 +158,7 @@ Description: Shared page layout and administration screens.
     <p class="field-help" id="auto-approve-help">{{ t('auto_approve_all_help') }}</p>
     <button class="primary">{{ t('save') }}</button>
   </form></section>
-  <section class="card settings-card"><div class="service-heading"><span class="telegram-icon">{{ app_logo('telegram') }}</span><div><h2>Telegram</h2></div></div><form action="/settings" method="post" class="stack">{{ csrf_input() }}
+  <section class="card settings-card" id="telegram"><div class="service-heading"><span class="telegram-icon">{{ app_logo('telegram') }}</span><div><h2>Telegram</h2></div></div><form action="/settings" method="post" class="stack">{{ csrf_input() }}
     <div class="fields"><label>{{ t('token') }}<input name="token" type="password" autocomplete="off" placeholder="••••••••"></label>
     <label>{{ t('language') }}<select name="language">{% for code,label in languages %}<option value="{{ code }}" {{ 'selected' if locale == code else '' }}>{{ label }}</option>{% endfor %}</select></label></div>
     <p class="field-help">{{ t('telegram_key_help') }}</p>
@@ -199,6 +187,6 @@ Description: Shared page layout and administration screens.
   <section class="card"><h2>{{ t('failed') }}</h2><pre>{{ operations|tojson(indent=2) }}</pre><pre>{{ outbox|tojson(indent=2) }}</pre></section>
   <section class="card"><h2>{{ t('requests') }}</h2><div class="table-scroll"><table><thead><tr><th>ID</th><th>{{ t('users') }}</th><th>{{ t('requests') }}</th></tr></thead><tbody>{% for event in events %}<tr><td>{{ event.id }}</td><td>{{ event.actor }}</td><td>{{ t(event.action) }} · {{ event.request_id or '' }} {{ event.detail }}</td></tr>{% endfor %}</tbody></table></div></section>
   {% endif %}
-  {% if section not in ['login','setup'] %}<footer><span>{{ t('private') }}</span></footer></div>{% endif %}
+  {% if section not in ['login','setup'] %}{% if section != 'dashboard' %}<footer><span>{{ t('private') }}</span></footer>{% endif %}</div>{% endif %}
 </main>
 </body></html>

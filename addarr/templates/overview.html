@@ -1,0 +1,77 @@
+{% from 'icons.html' import icon, app_logo %}
+{% macro connection_status(connected) %}
+  <span class="overview-status {{ 'available' if connected else '' }}">{{ t('overview_connected' if connected else 'disconnected') }}</span>
+{% endmacro %}
+<div class="overview-layout">
+  <div>
+    <section class="overview-reel" aria-labelledby="recent-heading">
+      <h2 id="recent-heading">{{ t('recent_requests') }}</h2>
+      <ul class="overview-summary">
+        {% for state in ['pending','queued','submitted','available'] %}
+        <li class="{{ state }}"><strong>{{ counts.get(state, 0) }}</strong>{{ t('overview_submitted' if state == 'submitted' else state) }}</li>
+        {% endfor %}
+      </ul>
+      {% if recent_requests %}
+      <ul class="overview-list">
+        {% for row in recent_requests %}
+        {% set service = row.media.service %}
+        {% set category = {'radarr':'movie','sonarr':'series','lidarr':'music'}.get(service,'movie') %}
+        {% set kind = row.media.get('kind', category) %}
+        <li class="overview-row">
+          <div class="overview-media">
+            <span class="request-art {{ service }}">{{ icon(category) }}</span>
+            <div>
+              <strong id="recent-title-{{ row.id }}">{{ row.media.title }}</strong>
+              <span class="overview-meta">{% if kind == 'series' and row.season is not none %}{{ t('overview_season') }} {{ row.season }}{% else %}{{ t({'movie':'overview_movie','album':'overview_album','artist':'overview_artist'}.get(kind, category)) }}{% endif %} / {{ service|capitalize }} / {{ row.name }}</span>
+            </div>
+          </div>
+          <div class="overview-stage">
+            <span class="overview-status {{ row.state }}{% if row.download and row.download.phase == 'download_failed' %} failed{% endif %}">
+              {{ t(row.download.phase if row.download else ('overview_submitted' if row.state == 'submitted' else row.state)) }}{% if row.download and row.download.percent is not none %} {{ '%.0f'|format(row.download.percent) }}%{% endif %}
+            </span>
+            {% if row.download and row.download.percent is not none %}
+            <progress max="100" value="{{ row.download.percent }}" aria-labelledby="recent-title-{{ row.id }}"></progress>
+            {% endif %}
+          </div>
+          <a class="button overview-button {{ 'primary' if row.state == 'pending' else '' }}" href="/requests#request-{{ row.id }}" id="recent-action-{{ row.id }}" aria-labelledby="recent-action-{{ row.id }} recent-title-{{ row.id }}">{{ t('overview_review' if row.state == 'pending' else 'overview_view_request') }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="overview-empty">
+        <h3>{{ t('no_requests') }}</h3>
+        <p>{{ t('requests_empty_hint' if online else 'overview_connect_hint') }}</p>
+        {% if not online %}<a class="button overview-button primary" href="/settings#telegram">{{ t('connect_telegram') }}</a>{% endif %}
+      </div>
+      {% endif %}
+    </section>
+    <section class="overview-migration">
+      {{ icon('migration') }}
+      <div><h3>{{ t('migration') }}</h3><p>{{ t('migration_hint') }}</p></div>
+      <a class="button overview-button" href="/migration">{{ t('preview') }}</a>
+    </section>
+  </div>
+  <div class="overview-rail">
+    <section aria-labelledby="overview-services">
+      <div class="overview-section-heading"><h2 id="overview-services">{{ t('your_services') }}</h2><a class="text-link" href="/services">{{ t('manage') }}</a></div>
+      <ul class="overview-service-list">
+        {% for service, category in [('radarr','movie'),('sonarr','series'),('lidarr','music')] %}
+        <li><a class="overview-service" href="/services#{{ service }}">
+          {{ app_logo(service) }}
+          <span><strong>{{ service|capitalize }}</strong><span class="overview-meta">{{ t(category) }}</span></span>
+          {{ connection_status(health.get(service, {}).get('ok')) }}
+        </a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section class="overview-telegram" aria-labelledby="overview-telegram">
+      <div class="overview-section-heading"><h2 id="overview-telegram">Telegram</h2></div>
+      <div class="overview-service">
+        {{ app_logo('telegram') }}<strong>{{ t('overview_telegram_bot') }}</strong>{{ connection_status(online) }}
+      </div>
+      <p>{{ t('overview_telegram_online' if online else 'telegram_description') }}</p>
+      <a class="text-link" href="/settings#telegram">{{ t('overview_telegram_settings' if online else 'connect_telegram') }}</a>
+      <a class="overview-access" href="/users"><span>{{ t('overview_pending_users') }}</span><strong>{{ pending_users }}</strong></a>
+    </section>
+  </div>
+</div>

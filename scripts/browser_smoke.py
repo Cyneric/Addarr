@@ -153,6 +153,9 @@ def main():
                         f"Setup HTTP {submission.value.status}: {page.locator('body').inner_text()}"
                     )
                 page.wait_for_url(f"http://127.0.0.1:{port}/")
+                expect(page.get_by_role("heading", name="No requests yet")).to_be_visible()
+                setup_telegram = page.locator(".overview-empty a")
+                expect(setup_telegram).to_have_attribute("href", "/settings#telegram")
                 page.screenshot(path=artifacts / "dashboard-desktop.png", full_page=True)
                 for path in ("services", "downloads", "updates", "users", "requests", "settings", "migration", "diagnostics"):
                     response = page.goto(f"http://127.0.0.1:{port}/{path}")
@@ -170,7 +173,17 @@ def main():
                                              "title": "Request removal test"}),),
                             )
                             request_id = cursor.lastrowid
-                        page.reload()
+                        page.goto(f"http://127.0.0.1:{port}/")
+                        request_link = page.get_by_role("link", name="View request Request removal test")
+                        expect(request_link).to_be_visible()
+                        page.screenshot(path=artifacts / "dashboard-active-desktop.png", full_page=True)
+                        page.set_viewport_size({"width": 390, "height": 844})
+                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+                        page.screenshot(path=artifacts / "dashboard-active-mobile.png", full_page=True)
+                        page.set_viewport_size({"width": 1440, "height": 1000})
+                        request_link.click()
+                        page.wait_for_url(f"**/requests#request-{request_id}")
+                        expect(page.locator(".request:target")).to_be_visible()
                         remove = page.locator(f'form[action="/requests/{request_id}/delete"] button')
                         cancel = page.locator(f'form[action="/requests/{request_id}/cancel"] button')
                         assert remove.is_visible() and cancel.is_visible()
