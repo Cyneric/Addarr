@@ -88,7 +88,10 @@ docker compose pull addarr
 docker compose up -d --no-build addarr
 ```
 
-Choose the image tag in `ADDARR_VERSION` and keep the existing config mount.
+Compose defaults to the published `main` preview. If `.env` still sets
+`ADDARR_VERSION=2.0.0a1` from an older local build, remove that setting before
+pulling. To pin a published build, set `ADDARR_VERSION` to its `sha-<commit>` tag.
+Keep the existing config mount.
 Download a database backup first. For a manual downgrade after a schema change,
 restore a backup created by the version you are returning to.
 

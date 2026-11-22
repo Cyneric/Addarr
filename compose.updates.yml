@@ -6,7 +6,6 @@
 services:
   addarr:
     container_name: ${ADDARR_CONTAINER_NAME:-addarr}
-    image: ghcr.io/cyneric/addarr:${ADDARR_VERSION:-main}
     labels:
       io.addarr.updates: enabled
     environment:

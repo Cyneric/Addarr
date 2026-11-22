@@ -1,8 +1,6 @@
 services:
   addarr:
-    # Before the first published release: docker compose build
-    image: ghcr.io/cyneric/addarr:${ADDARR_VERSION:-2.0.0a1}
-    build: .
+    image: ghcr.io/cyneric/addarr:${ADDARR_VERSION:-main}
     restart: unless-stopped
     init: true
     user: "${PUID:-1000}:${PGID:-1000}"

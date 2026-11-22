@@ -12,15 +12,14 @@ Version 2 is a rebuild of Addarr Refresh and is still in alpha. See [implementat
 
 ## Docker setup
 
-For now, build the image from this checkout:
-
-```sh
-mkdir -p config
-docker compose build
-docker compose up -d
-```
+Save [`docker-compose.yml`](https://raw.githubusercontent.com/Cyneric/Addarr/main/docker-compose.yml) in an empty directory and create a `config` folder next to it. Compose pulls the published `ghcr.io/cyneric/addarr:main` image. This is a v2 alpha preview.
 
 The container needs write access to `config`. On Linux, run `sudo chown 1000:1000 config`, or set `PUID` and `PGID` in `.env` to match the directory's owner before starting it.
+
+```sh
+docker compose pull
+docker compose up -d
+```
 
 Open <http://127.0.0.1:8090>. To access Addarr from another device, set `ADDARR_BIND` in `.env` to your server's LAN address. The web interface is intended for use over a LAN or VPN.
 
@@ -32,7 +31,7 @@ The Compose file accepts these settings:
 | `ADDARR_PORT` | `8090` | Web interface port |
 | `ADDARR_CONFIG` | `./config` | Directory for settings and data |
 | `PUID` / `PGID` | `1000` / `1000` | Container user and group |
-| `ADDARR_VERSION` | `2.0.0a1` | Docker image tag |
+| `ADDARR_VERSION` | `main` | Published image tag. Use a `sha-<commit>` tag to pin a build. |
 
 ### First run
 
@@ -161,6 +160,12 @@ Requires Python 3.13 and uv.
 ```sh
 uv sync --frozen --group dev
 uv run addarr --data-dir ./config serve --host 127.0.0.1
+```
+
+To build and run the Docker image from this checkout:
+
+```sh
+docker compose -f docker-compose.yml -f compose.build.yml up -d --build
 ```
 
 Run the checks with:
