@@ -1,6 +1,6 @@
 # Release acceptance
 
-This is an alpha rebuild. Do not describe it as a production-validated release until the outstanding live checks are complete.
+Record live test results and known limits before publishing a stable release.
 
 ## Automated checks
 
@@ -28,14 +28,22 @@ Live-service tests create and remove only their own disposable containers and an
 - Disposable Radarr 6.3.0.10514, Sonarr 4.0.19.2979 and Lidarr 3.1.0.4875: search, add, reconciliation and progress; Lidarr album add.
 - Container architecture and restart results are recorded in `IMPLEMENTATION-STATUS.md` after verification.
 
-## Required before public release
+## v2.0.0 acceptance
 
-- [ ] Dedicated live Telegram bot: commands and menu flows for every media kind, photos and fallback, advanced selections, two users, approval/rejection, invites, stale callbacks and revocation.
-- [ ] NAS deployment: correct volume ownership, LAN/VPN access, backup download and restore, container upgrade and rollback.
-- [ ] 24-hour NAS soak: repeated service outages, Telegram outage, rate limiting, restart during submission and restart during notification delivery; no lost accepted requests or uncontrolled retry loops.
-- [ ] Review all nine catalogs, including new approval and migration wording. Automated checks establish completeness and formatting; native-speaker review is recommended.
-- [ ] Record service and image versions, timing, logs and any limitations in the release notes.
-- [ ] Bump the Python version string and image tag together, update lock/export files, then push a `v2.*` tag only after acceptance.
+The maintainer confirmed these live checks on [v2.0.0a1](https://github.com/Cyneric/Addarr/releases/tag/v2.0.0a1). The stable release changes the version and documentation. The application behavior is unchanged.
+
+- [x] Live Telegram bot with real users.
+- [x] NAS deployment, backup restoration and container rollback.
+- [x] 24-hour NAS run.
+- Native-speaker review of all nine language catalogs is still pending. Automated tests check completeness and placeholders. Browser smoke tests check navigation in each locale.
+
+## Publishing a release
+
+For changes to Telegram, check commands and menus for each media kind, photos and fallback, advanced selections, access approval, invites, stale callbacks and revocation. For deployment changes, check volume ownership, LAN or VPN access, backup and restore, upgrade and rollback. Use a 24-hour run to check recovery from outages, rate limits and restarts during submission or delivery.
+
+1. Record the service versions, test results and known limits in the release notes.
+2. Update the version in `pyproject.toml` and `addarr/__init__.py`. Regenerate `uv.lock` and `requirements.txt`.
+3. Push a matching `v2.*` tag after acceptance. Publish the GitHub release once the tagged image is available for both platforms.
 
 The tag-triggered release workflow runs verification before publishing AMD64/ARM64 images to GHCR. Configure package visibility after first publication. No image or GitHub release is published by running local tests.
 

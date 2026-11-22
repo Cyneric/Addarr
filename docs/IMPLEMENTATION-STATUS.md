@@ -1,6 +1,6 @@
 # Implementation status — 2026-09-11
 
-Implemented on `rebuild/v2`, based on `7dfed200795e2de90452c0511e50c2fc2c4042fc`. Local baseline tag: `legacy/pre-v2`. Version: `2.0.0a1`.
+This is the original rebuild report for `2.0.0a1`. See the [release checklist](RELEASE-CHECKLIST.md) for acceptance results. The rebuild started on `rebuild/v2` at `7dfed200795e2de90452c0511e50c2fc2c4042fc`. Local baseline tag: `legacy/pre-v2`.
 
 ## Delivered
 
@@ -29,11 +29,9 @@ Implemented on `rebuild/v2`, based on `7dfed200795e2de90452c0511e50c2fc2c4042fc`
 
 Test services were disposable containers with no user libraries, indexers or download clients. Files in `artifacts/` contain screenshots and live-service version/image results. Two third-party TestClient deprecation warnings remain; they do not fail the tests.
 
-## Outstanding release acceptance
+## Checks still open at the time of this report
 
 - Live Telegram transport with a dedicated bot and real user accounts. Current Telegram tests exercise actual dispatcher composition against a simulated transport.
 - NAS deployment/permissions/restore and the planned 24-hour outage/restart soak.
 - Review of translated wording beyond automated catalog/placeholder checks.
 - Execution of the new GitHub workflows and publication of the first GHCR image. Nothing has been pushed or published during local implementation.
-
-These are explicit release limits. The rebuild should be evaluated as an alpha until live acceptance is recorded. See `RELEASE-CHECKLIST.md` for commands and recovery procedures.

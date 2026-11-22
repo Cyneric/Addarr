@@ -1,6 +1,10 @@
 # Updating Addarr
 
-Addarr checks `main` for new commits once an hour. When an update is ready,
+Addarr checks `main` for new commits once an hour. The web updater follows `main`
+even if your Compose file pins a release. To stay on stable releases, use the
+manual update steps below.
+
+When an update is ready,
 **Update available** appears at the top of the app. Click **Update now** to
 install it. No extra confirmation is needed. The page stays open while Addarr
 restarts and shows **Updated** when it is ready.
@@ -81,19 +85,19 @@ rejected because they cannot be backed up and restored reliably by this updater.
 
 ## Manual updates
 
-You can still update without the companion:
+To switch to a stable release, set `ADDARR_VERSION` in `.env` to its version
+without the `v`, for example `2.0.0`. Keep the existing config mount and download
+a database backup first. Then run:
 
 ```sh
 docker compose pull addarr
 docker compose up -d --no-build addarr
 ```
 
-Compose defaults to the published `main` preview. If `.env` still sets
-`ADDARR_VERSION=2.0.0a1` from an older local build, remove that setting before
-pulling. To pin a published build, set `ADDARR_VERSION` to its `sha-<commit>` tag.
-Keep the existing config mount.
-Download a database backup first. For a manual downgrade after a schema change,
-restore a backup created by the version you are returning to.
+Compose defaults to the published `main` preview if you leave `ADDARR_VERSION`
+unset. You can also pin a specific build with its `sha-<commit>` tag. For a
+manual downgrade after a schema change, restore a backup created by the version
+you are returning to.
 
 After a web update, Compose still contains the image tag from your deployment
 file. Set `ADDARR_VERSION` to the installed `sha-<commit>` tag before recreating

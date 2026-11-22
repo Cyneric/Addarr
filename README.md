@@ -4,13 +4,15 @@
 
 Request movies, TV shows and music in Telegram. Addarr sends approved requests to Radarr, Sonarr or Lidarr. Admins review requests and manage access in the web interface.
 
-Version 2 is in alpha. It replaces [Addarr Refresh](docs/IMPLEMENTATION-STATUS.md).
+Version 2 replaces Addarr Refresh. If you already run Refresh, see [how to import your installation](docs/MIGRATION.md).
 
 ![Addarr overview showing recent requests, download progress and connected services](docs/images/dashboard.png)
 
 ## Docker setup
 
-Save [`docker-compose.yml`](https://raw.githubusercontent.com/Cyneric/Addarr/main/docker-compose.yml) in a new directory. Create a `config` folder next to it. On Linux, run `sudo chown 1000:1000 config` so Addarr can write to it, or set `PUID` and `PGID` in `.env` to match the folder's owner and group.
+Save [`docker-compose.yml`](https://raw.githubusercontent.com/Cyneric/Addarr/v2.0.0/docker-compose.yml) in a new directory. Create a `config` folder next to it. On Linux, run `sudo chown 1000:1000 config` so Addarr can write to it, or set `PUID` and `PGID` in `.env` to match the folder's owner and group.
+
+For the [stable release](https://github.com/Cyneric/Addarr/releases/tag/v2.0.0), set `ADDARR_VERSION=2.0.0` in `.env`.
 
 Run these commands from the directory with the Compose file:
 
@@ -27,7 +29,7 @@ On the Docker host, open <http://127.0.0.1:8090>. To connect from another device
 | `ADDARR_PORT` | `8090` | Host port for the web interface |
 | `ADDARR_CONFIG` | `./config` | Host directory mounted at `/config` |
 | `PUID` / `PGID` | `1000` / `1000` | Container user and group |
-| `ADDARR_VERSION` | `main` | Tag for `ghcr.io/cyneric/addarr`. Use `sha-<commit>` to pin a published build. |
+| `ADDARR_VERSION` | `main` | Image tag. Use `2.0.0` for this release or `main` for preview builds. |
 
 Addarr stores its SQLite database in the config directory. Keep it on local storage, off SMB and NFS shares.
 
