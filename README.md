@@ -2,15 +2,15 @@
 
 # Addarr
 
-Request movies, TV shows and music in Telegram. Addarr sends approved requests to Radarr, Sonarr or Lidarr. Use the web interface to review requests and manage access.
+Request movies, TV shows and music in Telegram. Addarr sends approved requests to Radarr, Sonarr or Lidarr. Admins review requests and manage access in the web interface.
 
-Version 2 is an [alpha rebuild of Addarr Refresh](docs/IMPLEMENTATION-STATUS.md).
+Version 2 is in alpha. It replaces [Addarr Refresh](docs/IMPLEMENTATION-STATUS.md).
 
-![Addarr overview with request counts and service status](docs/images/dashboard.png)
+![Addarr overview showing recent requests, download progress and connected services](docs/images/dashboard.png)
 
 ## Docker setup
 
-Save [`docker-compose.yml`](https://raw.githubusercontent.com/Cyneric/Addarr/main/docker-compose.yml) in its own directory and create a `config` folder next to it. On Linux, make the folder writable by the container with `sudo chown 1000:1000 config`, or set `PUID` and `PGID` in `.env` to match its owner.
+Save [`docker-compose.yml`](https://raw.githubusercontent.com/Cyneric/Addarr/main/docker-compose.yml) in a new directory. Create a `config` folder next to it. On Linux, run `sudo chown 1000:1000 config` so Addarr can write to it, or set `PUID` and `PGID` in `.env` to match the folder's owner and group.
 
 Run these commands from the directory with the Compose file:
 
@@ -19,7 +19,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Open <http://127.0.0.1:8090> on the Docker host. For access from another device, set `ADDARR_BIND` in `.env` to the host's LAN address. Use the web interface over a LAN or VPN.
+On the Docker host, open <http://127.0.0.1:8090>. To connect from another device on your LAN or VPN, set `ADDARR_BIND` in `.env` to the host's address on that network.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -29,18 +29,18 @@ Open <http://127.0.0.1:8090> on the Docker host. For access from another device,
 | `PUID` / `PGID` | `1000` / `1000` | Container user and group |
 | `ADDARR_VERSION` | `main` | Tag for `ghcr.io/cyneric/addarr`. Use `sha-<commit>` to pin a published build. |
 
-Keep the config directory on the Docker host's local storage. Addarr stores its SQLite database there. Avoid SMB and NFS shares.
+Addarr stores its SQLite database in the config directory. Keep it on local storage, off SMB and NFS shares.
 
 ### First run
 
-1. Copy the token from `config/bootstrap-token` into the setup page and create an admin account. Addarr deletes the token after setup.
-2. In **Services**, enter a service URL and API key. Click **Test connection**, choose your defaults and save. Lidarr also needs a metadata profile. Use a LAN address or a service name on a shared Docker network. `localhost` inside the container points to Addarr itself.
-3. In **Settings**, enter your Telegram bot token, choose a language and enable the bot. Set up a media service first. Stop any older Addarr instance using the same token.
-4. Send `/start` to the bot in a private chat. In **Users**, check your Telegram user ID and approve access. You can also create a single-use invite once the bot is connected.
+1. Open the setup page and create an admin account with the token from `config/bootstrap-token`. Addarr deletes the token after setup.
+2. In **Services**, enter the URL and API key for at least one media service. Use its LAN address or its name on a shared Docker network. `localhost` inside the container points to Addarr itself. Click **Test connection**, then choose your defaults and save. Lidarr also needs a metadata profile.
+3. If an older Addarr instance uses the same Telegram bot token, stop that instance first. In **Settings**, enter the token, choose a language and enable the bot.
+4. Send `/start` to the bot in a private chat. In **Users**, check your Telegram user ID and approve access. To grant someone else access, you can also send them a single-use invite.
 
 ## Using Addarr
 
-Send `/start` to open the Telegram menu or use `/movie`, `/series` or `/music` to search. Requests need approval by default. Use `/requests` to check their status.
+In Telegram, send `/start` to open the menu or search with `/movie`, `/series` or `/music`. Requests wait for admin approval by default. Send `/requests` to check their status.
 
 - [Telegram commands, approvals and group chats](docs/TELEGRAM.md)
 - [Download progress with SABnzbd](docs/TELEGRAM.md#download-progress)
@@ -63,18 +63,18 @@ To reset a web account's password:
 uv run addarr --data-dir ./config reset-password USERNAME
 ```
 
-The command asks for a new password without displaying it and signs out all web sessions.
+Enter the new password when prompted. The terminal hides what you type. The reset signs out all web sessions.
 
 ## Development
 
-Requires Python 3.13 and uv.
+Install Python 3.13 and uv, then run:
 
 ```sh
 uv sync --frozen --group dev
 uv run addarr --data-dir ./config serve --host 127.0.0.1
 ```
 
-`python run.py` also starts Addarr after you install the dependencies. Put `--data-dir` before the subcommand. `--help` and `--version` work without a config file.
+After installing the dependencies, you can also start Addarr with `python run.py`. Put `--data-dir` before the subcommand. `--help` and `--version` work without a config file.
 
 To build and run the Docker image from this checkout:
 
